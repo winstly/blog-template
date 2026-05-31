@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mockNavItems } from '@/mock'
+import { mockNavItems } from '@/api/mock'
 
 interface Props {
   isOpen: boolean

@@ -42,6 +42,6 @@ const variantClasses = {
 
 <style scoped>
 .base-button {
-  font-family: 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-family-sans);
 }
 </style>

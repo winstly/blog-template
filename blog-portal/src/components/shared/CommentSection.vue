@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Message } from '@/types'
+import type { Message } from '@/api/types'
 import CommentItem from './CommentItem.vue'
 import CommentForm from './CommentForm.vue'
 

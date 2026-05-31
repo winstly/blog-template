@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { DiaryEntry } from '@/types'
+import type { DiaryEntry } from '@/api/types'
 import TimelineYear from './TimelineYear.vue'
 
 interface Props {

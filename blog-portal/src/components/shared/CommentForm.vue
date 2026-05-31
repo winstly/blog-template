@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useNotification } from '@/composables'
 
 const content = ref('')
 const isSubmitting = ref(false)
+const { visible, message: notificationMessage, show } = useNotification()
 
 function handleSubmit() {
   if (!content.value.trim()) return
   isSubmitting.value = true
   setTimeout(() => {
-    alert('留言功能暂未开放，敬请期待！')
+    show('留言功能暂未开放，敬请期待！')
     content.value = ''
     isSubmitting.value = false
   }, 500)
@@ -16,6 +18,14 @@ function handleSubmit() {
 </script>
 
 <template>
+  <!-- 通知组件 -->
+  <Transition name="notification">
+    <div v-if="visible" class="notification">
+      <i class="fa fa-info-circle"></i>
+      {{ notificationMessage }}
+    </div>
+  </Transition>
+
   <div class="comment-form">
     <div class="form-header">
       <i class="fa fa-pencil"></i>
@@ -105,7 +115,7 @@ function handleSubmit() {
   align-items: center;
   gap: 6px;
   padding: 10px 24px;
-  background: linear-gradient(135deg, var(--color-accent-secondary) 0%, #764ba2 100%);
+  background: var(--gradient-accent);
   color: var(--color-text-on-dark);
   border: none;
   border-radius: var(--radius-md);
@@ -125,5 +135,38 @@ function handleSubmit() {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+/* 通知样式 */
+.notification {
+  position: fixed;
+  top: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gradient-accent);
+  color: var(--color-text-on-dark);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-size-base);
+  z-index: var(--z-notification);
+}
+
+.notification i {
+  font-size: var(--font-size-lg);
+}
+
+.notification-enter-active,
+.notification-leave-active {
+  transition: all var(--transition-base) ease;
+}
+
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
 }
 </style>

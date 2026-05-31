@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DiaryEntry } from '@/types'
+import type { DiaryEntry } from '@/api/types'
 import TimelineItem from './TimelineItem.vue'
 
 interface Props {

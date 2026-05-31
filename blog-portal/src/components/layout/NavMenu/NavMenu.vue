@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAppStore } from '@/stores/app'
+import { useAppStore } from '@/plugins/stores/app'
 import NavMenuButton from './NavMenuButton.vue'
 import NavMenuPanel from './NavMenuPanel.vue'
 

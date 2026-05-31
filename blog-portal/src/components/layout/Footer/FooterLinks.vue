@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { mockSocialLinks } from '@/mock'
+import { mockSocialLinks } from '@/api/mock'
 
 const iconMap: Record<string, string> = {
+  'user': 'fa fa-user',
   'book-open': 'fa fa-book',
   'message-circle': 'fa fa-comments',
-  'share-2': 'fa fa-share',
   'snowflake': 'fa fa-snowflake-o',
-  'archive': 'fa fa-files-o',
 }
 </script>
 
@@ -16,10 +15,10 @@ const iconMap: Record<string, string> = {
       <h2 class="footer-links__title">相关链接</h2>
       <ul class="footer-links__list">
         <li v-for="link in mockSocialLinks" :key="link.label">
-          <a :href="link.url">
+          <RouterLink :to="link.url">
             <i :class="iconMap[link.icon]"></i>
             {{ link.label }}
-          </a>
+          </RouterLink>
         </li>
       </ul>
     </div>

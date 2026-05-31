@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Message } from '@/types'
+import type { Message } from '@/api/types'
+import { useNotification } from '@/composables'
 
 interface Props {
   message: Message
@@ -11,6 +12,7 @@ const props = defineProps<Props>()
 
 const showReplyForm = ref(false)
 const replyContent = ref('')
+const { visible, message: notificationMessage, show } = useNotification()
 
 function toggleReply() {
   showReplyForm.value = !showReplyForm.value
@@ -18,18 +20,21 @@ function toggleReply() {
 
 function submitReply() {
   if (!replyContent.value.trim()) return
-  // 这里可以添加提交逻辑
-  alert('回复功能暂未开放')
+  show('回复功能暂未开放')
   replyContent.value = ''
   showReplyForm.value = false
-}
-
-function formatTime(dateStr: string): string {
-  return dateStr
 }
 </script>
 
 <template>
+  <!-- 通知组件 -->
+  <Transition name="notification">
+    <div v-if="visible" class="notification">
+      <i class="fa fa-info-circle"></i>
+      {{ notificationMessage }}
+    </div>
+  </Transition>
+
   <div :class="['comment-item', { 'is-reply': isReply }]">
     <img :src="message.avatar" :alt="message.author" class="avatar" />
 
@@ -40,7 +45,7 @@ function formatTime(dateStr: string): string {
           <i class="fa fa-reply"></i>
           {{ message.replyTo }}
         </span>
-        <span class="time">{{ formatTime(message.date) }}</span>
+        <span class="time">{{ message.date }}</span>
       </div>
 
       <div class="comment-content">
@@ -264,7 +269,7 @@ function formatTime(dateStr: string): string {
 }
 
 .submit-btn {
-  background: linear-gradient(135deg, var(--color-accent-secondary) 0%, #764ba2 100%);
+  background: var(--gradient-accent);
   border: none;
   color: var(--color-text-on-dark);
 }
@@ -304,5 +309,38 @@ function formatTime(dateStr: string): string {
 .expand-leave-from {
   opacity: 1;
   max-height: 200px;
+}
+
+/* 通知样式 */
+.notification {
+  position: fixed;
+  top: var(--spacing-xl);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gradient-accent);
+  color: var(--color-text-on-dark);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--font-size-base);
+  z-index: var(--z-notification);
+}
+
+.notification i {
+  font-size: var(--font-size-lg);
+}
+
+.notification-enter-active,
+.notification-leave-active {
+  transition: all var(--transition-base) ease;
+}
+
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { mockProfile } from '@/mock'
+import { mockProfile } from '@/api/mock'
 
 interface Props {
   title: string

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { mockProfile } from '@/mock'
+import { mockProfile } from '@/api/mock'
 import FooterProfile from './FooterProfile.vue'
 import FooterLinks from './FooterLinks.vue'
 import FooterContact from './FooterContact.vue'
+
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
@@ -24,7 +26,7 @@ import FooterContact from './FooterContact.vue'
         <div class="footer__row">
           <div class="footer__col footer__col--full">
             <p class="footer__copyright-text">
-              Copyright &copy; 2018-2018 {{ mockProfile.nickname }} All Rights Reserved V.3.1.3 蜀ICP备18008600号
+              Copyright &copy; 2018-{{ currentYear }} {{ mockProfile.nickname }} All Rights Reserved V.3.1.3 蜀ICP备18008600号
             </p>
           </div>
         </div>
@@ -36,6 +38,7 @@ import FooterContact from './FooterContact.vue'
 <style scoped>
 .footer {
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .footer__container {
@@ -47,7 +50,7 @@ import FooterContact from './FooterContact.vue'
 }
 
 .footer__top {
-  background: var(--color-dark-bg);
+  background: var(--color-dark-bg, #232328);
   padding: var(--spacing-3xl) 0 90px;
 }
 
@@ -70,11 +73,11 @@ import FooterContact from './FooterContact.vue'
 
 .footer__copyright {
   padding: var(--spacing-xs) 0;
-  background: var(--color-darker-bg);
+  background: var(--color-darker-bg, #1D1D21);
 }
 
 .footer__copyright-text {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #787977);
   font-size: var(--font-size-sm);
   margin: 0;
   text-align: center;
