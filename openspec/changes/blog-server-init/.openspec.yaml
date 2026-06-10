@@ -1,0 +1,9 @@
+name: blog-server-init
+description: Blog server backend initialization - DDD-driven Spring Boot 3 + MyBatis-Plus implementation
+status: proposed
+created: "2026-06-11"
+domains:
+  - content
+  - classification
+  - interaction
+  - site

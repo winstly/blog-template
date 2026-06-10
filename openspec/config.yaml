@@ -1,0 +1,54 @@
+schema: spec-driven
+
+context: |
+  Tech stack: JDK 21, Spring Boot 3, MyBatis-Plus 3.5.x, Maven
+  Database: H2 (dev), MySQL 8.0+ (test/prod)
+  DDD Bounded Contexts: Content, Classification, Interaction, Site
+  Conventions: RESTful API, unified response format, logical deletion
+  Language: Chinese UI, English code
+
+bounded-contexts:
+  - name: content
+    subdomain: core
+    description: 文章元数据管理、正文存储、版本快照、发布状态流转
+    aggregates:
+      - Article (含 Content, ContentRevision)
+
+  - name: classification
+    subdomain: supporting
+    description: 标签树形管理、分类语义、文章-标签关联
+    aggregates:
+      - Tag
+      - Relation
+
+  - name: interaction
+    subdomain: supporting
+    description: 评论/留言/点赞、树形回复
+    aggregates:
+      - Interaction
+
+  - name: site
+    subdomain: generic
+    description: 站点 KV 配置、友链管理、导航/个人信息
+    aggregates:
+      - Dict
+
+architecture-constraints:
+  - 上下文间通过 OHS 接口通信，禁止直接注入其他上下文的 Repository
+  - InteractionContext 通过 ACL (ArticleTranslator) 访问 ContentContext
+  - 事件通过 Spring ApplicationEventPublisher 进程内发布
+  - 1 个事务修改 1 个聚合实例（Article 含 Content/Revision 为唯一例外）
+  - 公共审计字段通过 BaseEntity 基类统一
+  - 逻辑删除通过 MyBatis-Plus @TableLogic 统一
+
+rules:
+  proposal:
+    - Non-goals 必须显式列出
+    - Core 子域能力必须全量 Scenario 化
+  design:
+    - 分层架构按 domain/application/infrastructure/interfaces 组织
+    - 跨上下文翻译通过 OHS + ACL 实现
+  tasks:
+    - 按依赖顺序排列：Domain Model → Repository → Application Service → API
+    - 每个任务关联 Spec 作为验收标准
+    - 单个任务工作量 ≤ 2 小时
