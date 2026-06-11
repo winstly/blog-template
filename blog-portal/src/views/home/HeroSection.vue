@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
-import SectionContainer from '@/components/layout/SectionContainer.vue'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
+import SectionContainer from '@/components/layout/SectionContainer.vue';
+
+const { profile, fetchProfile } = useSiteData();
+
+onMounted(() => {
+  fetchProfile();
+});
 
 const scrollToNext = () => {
-  const nextSection = document.getElementById('articles-section')
+  const nextSection = document.getElementById('articles-section');
   if (nextSection) {
-    nextSection.scrollIntoView({ behavior: 'smooth' })
+    nextSection.scrollIntoView({ behavior: 'smooth' });
   }
-}
+};
 </script>
 
 <template>
@@ -18,8 +25,8 @@ const scrollToNext = () => {
     <div class="fp-tablecell">
       <div class="page1">
         <div class="nav">
-          <h1>{{ mockProfile.nickname }}</h1>
-          <p>{{ mockProfile.signature }}</p>
+          <h1>{{ profile?.nickname ?? '' }}</h1>
+          <p>{{ profile?.signature ?? '' }}</p>
           <RouterLink class="btn" to="/blog">进入博客</RouterLink>
         </div>
       </div>

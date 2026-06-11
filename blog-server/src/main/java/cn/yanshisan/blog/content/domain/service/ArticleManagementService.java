@@ -15,6 +15,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ArticleManagementService {
@@ -77,6 +79,13 @@ public class ArticleManagementService {
 
         articleRepository.delete(article, content);
         eventPublisher.publishEvent(new ArticleDeletedEvent(this, articleCode));
+    }
+
+    @Transactional
+    public void deleteArticles(List<String> articleCodes) {
+        for (String code : articleCodes) {
+            deleteArticle(code);
+        }
     }
 
     private Article findArticleOrThrow(String articleCode) {

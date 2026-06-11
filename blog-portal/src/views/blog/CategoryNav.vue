@@ -10,10 +10,10 @@ defineProps<Props>()
 
 <template>
   <ul class="category-nav">
-    <li v-for="category in categories" :key="category.id" class="category-item">
-      <RouterLink :to="`/blog?category=${category.id}`">
-        {{ category.name }}
-        <span class="count">({{ category.count }})</span>
+    <li v-for="category in categories" :key="category.tagCode" class="category-item">
+      <RouterLink :to="`/blog?category=${category.tagCode}`">
+        {{ category.tagName }}
+        <span class="count">({{ category.articleCount }})</span>
       </RouterLink>
     </li>
   </ul>

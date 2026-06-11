@@ -1,6 +1,22 @@
 <script setup lang="ts">
-import ArticleCard from './ArticleCard.vue'
-import { mockArticles } from '@/api/mock'
+import { ref, onMounted } from 'vue';
+import ArticleCard from './ArticleCard.vue';
+import { articleService } from '@/api/services';
+import type { Article } from '@/api/types';
+
+const articles = ref<Article[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const result = await articleService.getList({ page: 1, pageSize: 6 });
+    articles.value = result.list;
+  } catch (e) {
+    console.error('Failed to fetch articles:', e);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -23,14 +39,17 @@ import { mockArticles } from '@/api/mock'
       </div>
 
       <!-- Articles Grid -->
-      <div class="articles-grid grid grid-cols-1 md:grid-cols-3">
+      <div v-if="!loading" class="articles-grid grid grid-cols-1 md:grid-cols-3">
         <div
-          v-for="(article, index) in mockArticles"
-          :key="article.id"
+          v-for="(article, index) in articles"
+          :key="article.articleCode"
           class="article-col"
         >
           <ArticleCard :article="article" :delay="index * 200" />
         </div>
+      </div>
+      <div v-else class="text-center py-12">
+        <i class="fa fa-spinner fa-spin"></i> 加载中...
       </div>
     </div>
   </section>

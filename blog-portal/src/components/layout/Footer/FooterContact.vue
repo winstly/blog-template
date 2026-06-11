@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
+
+const { profile, fetchProfile } = useSiteData();
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -7,16 +14,16 @@ import { mockProfile } from '@/api/mock'
     <div class="footer-contact">
       <h2 class="footer-contact__title">联系我</h2>
       <ul class="footer-contact__list">
-        <li><i class="fa fa-map"></i>地址: {{ mockProfile.location }}</li>
+        <li><i class="fa fa-map"></i>地址: {{ profile?.location ?? '' }}</li>
         <li>
           <i class="fa fa-qq"></i>QQ:
-          <a :href="'https://wpa.qq.com/msgrd?v=3&uin=' + mockProfile.qq" target="_blank" rel="noopener">
-            {{ mockProfile.qq }}
+          <a :href="'https://wpa.qq.com/msgrd?v=3&uin=' + (profile?.qq ?? '')" target="_blank" rel="noopener">
+            {{ profile?.qq ?? '' }}
           </a>
         </li>
         <li>
           <i class="fa fa-envelope"></i>邮箱:
-          <a :href="'mailto:' + mockProfile.email">{{ mockProfile.email }}</a>
+          <a :href="'mailto:' + (profile?.email ?? '')">{{ profile?.email ?? '' }}</a>
         </li>
       </ul>
     </div>

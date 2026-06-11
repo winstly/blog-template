@@ -36,11 +36,11 @@
 
     <el-card shadow="never">
       <el-table v-loading="loading" :data="pagedTags">
-        <el-table-column label="名称" prop="name" />
+        <el-table-column label="名称" prop="tagName" />
         <el-table-column label="文章数" prop="articleCount" width="100" />
         <el-table-column label="创建时间" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
+            {{ formatDate(row.gmtCreate) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
@@ -76,8 +76,8 @@
       size="400px"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入标签名称" />
+        <el-form-item label="名称" prop="tagName">
+          <el-input v-model="form.tagName" placeholder="请输入标签名称" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -92,10 +92,10 @@
         <el-form-item label="目标标签">
           <el-select v-model="mergeTarget" placeholder="选择目标标签" class="w-full">
             <el-option
-              v-for="tag in tags.filter(t => t.id !== mergeSourceId)"
-              :key="tag.id"
-              :label="tag.name"
-              :value="tag.id"
+              v-for="tag in tags.filter(t => t.tagCode !== mergeSourceId)"
+              :key="tag.tagCode"
+              :label="tag.tagName"
+              :value="tag.tagCode"
             />
           </el-select>
         </el-form-item>
@@ -131,9 +131,9 @@ const filters = reactive({
 // 使用 computed 进行过滤
 const filteredTags = computed(() => {
   return tags.value.filter(tag => {
-    const nameMatch = !filters.name || tag.name.toLowerCase().includes(filters.name.toLowerCase())
+    const nameMatch = !filters.name || tag.tagName.toLowerCase().includes(filters.name.toLowerCase())
     const articlesMatch = !filters.hasArticles ||
-      (filters.hasArticles === 'yes' ? (tag.count || 0) > 0 : (tag.count || 0) === 0)
+      (filters.hasArticles === 'yes' ? (tag.articleCount || 0) > 0 : (tag.articleCount || 0) === 0)
     return nameMatch && articlesMatch
   })
 })
@@ -156,15 +156,15 @@ function handlePageChange() {
 const dialogVisible = ref(false)
 const mergeVisible = ref(false)
 const isEdit = ref(false)
-const currentId = ref('')
+const currentCode = ref('')
 const formRef = ref<FormInstance>()
 
 const form = reactive({
-  name: '',
+  tagName: '',
 })
 
 const rules: FormRules = {
-  name: [
+  tagName: [
     { required: true, message: '请输入标签名称', trigger: 'blur' },
     { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' },
   ],
@@ -198,15 +198,15 @@ function handleReset() {
 
 function handleCreate() {
   isEdit.value = false
-  currentId.value = ''
-  form.name = ''
+  currentCode.value = ''
+  form.tagName = ''
   dialogVisible.value = true
 }
 
 function handleEdit(tag: Tag) {
   isEdit.value = true
-  currentId.value = tag.id
-  form.name = tag.name
+  currentCode.value = tag.tagCode
+  form.tagName = tag.tagName
   dialogVisible.value = true
 }
 
@@ -218,10 +218,10 @@ async function handleSubmit() {
 
   try {
     if (isEdit.value) {
-      await tagService.update(currentId.value, { name: form.name })
+      await tagService.update(currentCode.value, { tagName: form.tagName })
       ElMessage.success('标签更新成功')
     } else {
-      await tagService.create({ name: form.name })
+      await tagService.create({ tagCode: 'tag_' + Date.now(), tagName: form.tagName })
       ElMessage.success('标签创建成功')
     }
 
@@ -235,7 +235,7 @@ async function handleSubmit() {
 
 async function handleDelete(tag: Tag) {
   try {
-    await tagService.delete(tag.id)
+    await tagService.delete(tag.tagCode)
     ElMessage.success('删除成功')
     loadTags()
   } catch (error) {
@@ -245,8 +245,8 @@ async function handleDelete(tag: Tag) {
 }
 
 function handleMerge(tag: Tag) {
-  mergeSourceId.value = tag.id
-  mergeSourceName.value = tag.name
+  mergeSourceId.value = tag.tagCode
+  mergeSourceName.value = tag.tagName
   mergeTarget.value = ''
   mergeVisible.value = true
 }
@@ -258,7 +258,7 @@ async function handleMergeSubmit() {
   }
 
   try {
-    await tagService.merge(mergeSourceId.value, mergeTarget.value)
+    await tagService.move(mergeSourceId.value, mergeTarget.value)
     ElMessage.success('合并成功')
     mergeVisible.value = false
     loadTags()

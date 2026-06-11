@@ -1,19 +1,40 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useNotification } from '@/composables'
+import { ref } from 'vue';
+import { interactionService } from '@/api/services';
+import { useNotification } from '@/composables';
 
-const content = ref('')
-const isSubmitting = ref(false)
-const { visible, message: notificationMessage, show } = useNotification()
+const content = ref('');
+const isSubmitting = ref(false);
+const { visible, message: notificationMessage, show } = useNotification();
 
-function handleSubmit() {
-  if (!content.value.trim()) return
-  isSubmitting.value = true
-  setTimeout(() => {
-    show('留言功能暂未开放，敬请期待！')
-    content.value = ''
-    isSubmitting.value = false
-  }, 500)
+interface Props {
+  targetType?: string;
+  targetCode?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  targetType: 'article',
+  targetCode: '',
+});
+
+async function handleSubmit() {
+  if (!content.value.trim()) return;
+  isSubmitting.value = true;
+  try {
+    await interactionService.create({
+      targetType: props.targetType,
+      targetCode: props.targetCode,
+      actionType: 'comment',
+      userName: '访客',
+      remark: content.value.trim(),
+    });
+    show('评论成功！');
+    content.value = '';
+  } catch (e) {
+    show((e as Error).message || '评论失败，请稍后重试');
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 </script>
 

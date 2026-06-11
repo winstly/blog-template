@@ -6,12 +6,20 @@ import cn.yanshisan.blog.classification.domain.repository.RelationRepository;
 import cn.yanshisan.blog.classification.domain.repository.TagRepository;
 import cn.yanshisan.blog.classification.domain.service.TagManagementService;
 import cn.yanshisan.blog.classification.domain.vo.RelationType;
+import cn.yanshisan.blog.classification.infrastructure.persistence.mapper.ArticleTagMapper;
 import cn.yanshisan.blog.classification.interfaces.dto.TagVO;
+import cn.yanshisan.blog.shared.api.ErrorCode;
+import cn.yanshisan.blog.shared.exception.BusinessException;
 import cn.yanshisan.blog.shared.ohs.ArticleOHS;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +29,7 @@ public class TagApplicationService {
     private final TagRepository tagRepository;
     private final RelationRepository relationRepository;
     private final ArticleOHS articleOHS;
+    private final ArticleTagMapper articleTagMapper;
 
     public TagVO createTag(String tagCode, String tagName, String description, String parentTagCode) {
         Tag tag = tagManagementService.createTag(tagCode, tagName, description, parentTagCode);
@@ -42,19 +51,18 @@ public class TagApplicationService {
     }
 
     public TagVO getTagDetail(String tagCode) {
-        Tag tag = tagRepository.findByCode(tagCode)
-                .orElseThrow();
+        Tag tag = findTagOrThrow(tagCode);
         long articleCount = relationRepository.countByTagCodeAndRelationType(tagCode, RelationType.TAG);
         return TagVO.from(tag, articleCount);
     }
 
     public List<TagVO> listAllTags() {
         List<Tag> tags = tagRepository.findAll();
+        List<ArticleTag> tagRelations = relationRepository.findByRelationType(RelationType.TAG);
+        Map<String, Long> countMap = tagRelations.stream()
+                .collect(Collectors.groupingBy(ArticleTag::getTagCode, Collectors.counting()));
         return tags.stream()
-                .map(tag -> {
-                    long count = relationRepository.countByTagCodeAndRelationType(tag.getTagCode(), RelationType.TAG);
-                    return TagVO.from(tag, count);
-                })
+                .map(tag -> TagVO.from(tag, countMap.getOrDefault(tag.getTagCode(), 0L)))
                 .toList();
     }
 
@@ -65,14 +73,18 @@ public class TagApplicationService {
                 .distinct()
                 .toList();
 
+        if (categoryTagCodes.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, Long> countMap = relations.stream()
+                .collect(Collectors.groupingBy(ArticleTag::getTagCode, Collectors.counting()));
+
         return categoryTagCodes.stream()
-                .map(tagCode -> {
-                    Tag tag = tagRepository.findByCode(tagCode).orElse(null);
-                    if (tag == null) return null;
-                    long count = relationRepository.countByTagCodeAndRelationType(tagCode, RelationType.CATEGORY);
-                    return TagVO.from(tag, count);
-                })
-                .filter(vo -> vo != null)
+                .map(tagCode -> tagRepository.findByCode(tagCode)
+                        .map(tag -> TagVO.from(tag, countMap.getOrDefault(tagCode, 0L)))
+                        .orElse(null))
+                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -80,12 +92,13 @@ public class TagApplicationService {
         if (!articleOHS.existsArticle(articleCode)) {
             return List.of();
         }
-        List<ArticleTag> relations = relationRepository.findByArticleCode(articleCode).stream()
+        List<String> tagCodes = relationRepository.findByArticleCode(articleCode).stream()
                 .filter(r -> r.getRelationType() == RelationType.CATEGORY)
+                .map(ArticleTag::getTagCode)
                 .toList();
-        return relations.stream()
-                .map(r -> tagRepository.findByCode(r.getTagCode()).orElse(null))
-                .filter(tag -> tag != null)
+        return tagCodes.stream()
+                .map(tagCode -> tagRepository.findByCode(tagCode).orElse(null))
+                .filter(Objects::nonNull)
                 .map(tag -> TagVO.from(tag, 0L))
                 .toList();
     }
@@ -94,12 +107,13 @@ public class TagApplicationService {
         if (!articleOHS.existsArticle(articleCode)) {
             return List.of();
         }
-        List<ArticleTag> relations = relationRepository.findByArticleCode(articleCode).stream()
+        List<String> tagCodes = relationRepository.findByArticleCode(articleCode).stream()
                 .filter(r -> r.getRelationType() == RelationType.TAG)
+                .map(ArticleTag::getTagCode)
                 .toList();
-        return relations.stream()
-                .map(r -> tagRepository.findByCode(r.getTagCode()).orElse(null))
-                .filter(tag -> tag != null)
+        return tagCodes.stream()
+                .map(tagCode -> tagRepository.findByCode(tagCode).orElse(null))
+                .filter(Objects::nonNull)
                 .map(tag -> TagVO.from(tag, 0L))
                 .toList();
     }
@@ -110,5 +124,30 @@ public class TagApplicationService {
                 .map(ArticleTag::getArticleCode)
                 .filter(articleOHS::existsArticle)
                 .toList();
+    }
+
+    private Tag findTagOrThrow(String tagCode) {
+        return tagRepository.findByCode(tagCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND, tagCode));
+    }
+
+    @Transactional
+    public void assignTagsToArticle(String articleCode, List<String> tagCodes, RelationType relationType) {
+        // Delete existing relations for this articleCode + relationType
+        LambdaQueryWrapper<ArticleTag> deleteWrapper = new LambdaQueryWrapper<ArticleTag>()
+                .eq(ArticleTag::getArticleCode, articleCode)
+                .eq(ArticleTag::getRelationType, relationType);
+        articleTagMapper.delete(deleteWrapper);
+
+        // Insert new relations
+        if (tagCodes != null && !tagCodes.isEmpty()) {
+            for (String tagCode : tagCodes) {
+                ArticleTag relation = new ArticleTag();
+                relation.setArticleCode(articleCode);
+                relation.setTagCode(tagCode);
+                relation.setRelationType(relationType);
+                articleTagMapper.insert(relation);
+            }
+        }
     }
 }

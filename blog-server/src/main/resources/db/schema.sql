@@ -110,6 +110,7 @@ CREATE TABLE blog_interaction (
   tree_path       VARCHAR(512) DEFAULT NULL COMMENT '物化路径',
   tree_depth      TINYINT      NOT NULL DEFAULT 0 COMMENT '层级深度: 0=根',
   ext_meta        JSON         DEFAULT NULL COMMENT '扩展元数据',
+  display_status  TINYINT      NOT NULL DEFAULT 1 COMMENT '0=pending,1=approved',
 
   PRIMARY KEY (id),
   INDEX idx_interaction_target (target_type, target_code, gmt_create),
@@ -159,3 +160,21 @@ CREATE TABLE blog_content_revision (
   UNIQUE KEY uk_revision_ver (content_id, version),
   INDEX idx_revision_content (content_id, version DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='正文修订快照表';
+
+-- 8. 日记
+CREATE TABLE blog_diary (
+  id              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+  creator         VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '创建人',
+  gmt_create      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  modifier        VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '修改人',
+  gmt_modified    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+  is_deleted      TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0=正常 1=已删除',
+  diary_code      VARCHAR(128) NOT NULL DEFAULT '' COMMENT '日记编码',
+  content         MEDIUMTEXT   NOT NULL COMMENT '日记内容',
+  images          JSON         DEFAULT NULL COMMENT '图片URL列表',
+  diary_date      DATE         NOT NULL COMMENT '日记日期',
+  year            INT          NOT NULL COMMENT '年份(冗余)',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_diary_code (diary_code),
+  INDEX idx_diary_year (year, diary_date DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日记表';

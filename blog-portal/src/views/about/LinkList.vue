@@ -11,7 +11,7 @@ defineProps<Props>()
 
 <template>
   <ul class="link-list">
-    <LinkCard v-for="link in links" :key="link.id" :link="link" />
+    <LinkCard v-for="link in links" :key="link.itemCode" :link="link" />
   </ul>
 </template>
 

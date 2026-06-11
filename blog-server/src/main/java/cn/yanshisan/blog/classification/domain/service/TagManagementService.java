@@ -88,8 +88,11 @@ public class TagManagementService {
     @Transactional
     public void deleteTag(String tagCode) {
         Tag tag = findTagOrThrow(tagCode);
-        tagRepository.delete(tag);
-        eventPublisher.publishEvent(new TagDeletedEvent(this, tagCode));
+        List<Tag> descendants = tagRepository.findByTreePathPrefix(tag.getTreePath());
+        for (Tag descendant : descendants) {
+            tagRepository.delete(descendant);
+            eventPublisher.publishEvent(new TagDeletedEvent(this, descendant.getTagCode()));
+        }
     }
 
     private Tag findTagOrThrow(String tagCode) {

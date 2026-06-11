@@ -73,6 +73,14 @@ public class DictRepositoryImpl implements DictRepository {
         return sysDictMapper.selectCount(wrapper) > 0;
     }
 
+    @Override
+    public Optional<SysDict> findByBizCodeAndItemCode(String bizCode, String itemCode) {
+        LambdaQueryWrapper<SysDict> wrapper = new LambdaQueryWrapper<SysDict>()
+                .eq(SysDict::getBizCode, bizCode)
+                .eq(SysDict::getItemCode, itemCode);
+        return Optional.ofNullable(sysDictMapper.selectOne(wrapper));
+    }
+
     private LambdaQueryWrapper<SysDict> buildTripleWrapper(DictTriple triple) {
         return new LambdaQueryWrapper<SysDict>()
                 .eq(SysDict::getBizCode, triple.getBizCode())

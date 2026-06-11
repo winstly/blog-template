@@ -32,7 +32,7 @@
       <el-tree-select
         v-model="form.category"
         :data="categoryTree"
-        :props="{ label: 'name', value: 'name' }"
+        :props="{ label: 'tagName', value: 'tagCode' }"
         placeholder="选择分类"
         check-strictly
         class="w-full"
@@ -53,9 +53,9 @@
       >
         <el-option
           v-for="tag in tags"
-          :key="tag.id"
-          :label="tag.name"
-          :value="tag.name"
+          :key="tag.tagCode"
+          :label="tag.tagName"
+          :value="tag.tagName"
         />
       </el-select>
     </el-form-item>
@@ -70,7 +70,7 @@
         :show-file-list="false"
         :on-change="handleCoverChange"
       >
-        <img v-if="form.cover" :src="form.cover" class="cover-preview" />
+        <img v-if="form.coverUrl" :src="form.coverUrl" class="cover-preview" />
         <div v-else class="cover-placeholder">
           <el-icon :size="24"><Plus /></el-icon>
           <span>点击上传封面</span>
@@ -78,17 +78,17 @@
       </el-upload>
       <!-- 查看态只显示图片 -->
       <div v-else class="cover-display">
-        <img v-if="form.cover" :src="form.cover" class="cover-preview" />
+        <img v-if="form.coverUrl" :src="form.coverUrl" class="cover-preview" />
         <div v-else class="cover-placeholder">
           <span>暂无封面</span>
         </div>
       </div>
       <el-button
-        v-if="form.cover && !disabled"
+        v-if="form.coverUrl && !disabled"
         link
         type="danger"
         size="small"
-        @click="form.cover = ''"
+        @click="form.coverUrl = ''"
       >
         删除封面
       </el-button>
@@ -99,13 +99,13 @@
       <h4 class="status-title">发布状态</h4>
       <div class="status-item">
         <span class="status-label">当前状态</span>
-        <el-tag :type="form.status === 'published' ? 'success' : 'info'">
-          {{ form.status === 'published' ? '已发布' : '草稿' }}
+        <el-tag :type="form.publishStatus === 'PUBLISHED' ? 'success' : 'info'">
+          {{ form.publishStatus === 'PUBLISHED' ? '已发布' : '草稿' }}
         </el-tag>
       </div>
       <div class="status-item">
         <span class="status-label">创建时间</span>
-        <span class="status-value">{{ formatDate(form.date) }}</span>
+        <span class="status-value">{{ formatDate(form.gmtCreate) }}</span>
       </div>
     </div>
   </div>
@@ -123,9 +123,9 @@ interface FormData {
   content: string
   category: string
   tags: string[]
-  cover: string
-  status: 'draft' | 'published'
-  date: string
+  coverUrl: string
+  publishStatus: 'DRAFT' | 'PUBLISHED'
+  gmtCreate: string
 }
 
 const props = defineProps<{
@@ -151,7 +151,7 @@ function formatDate(dateStr: string): string {
 function handleCoverChange(file: UploadFile) {
   const reader = new FileReader()
   reader.onload = (e) => {
-    form.value.cover = e.target?.result as string
+    form.value.coverUrl = e.target?.result as string
   }
   reader.readAsDataURL(file.raw!)
 }

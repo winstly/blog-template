@@ -36,11 +36,11 @@ function submitReply() {
   </Transition>
 
   <div :class="['comment-item', { 'is-reply': isReply }]">
-    <img :src="message.avatar" :alt="message.author" class="avatar" />
+    <img :src="message.userAvatarUrl ?? ''" :alt="message.userName" class="avatar" />
 
     <div class="comment-body">
       <div class="comment-header">
-        <span class="author">{{ message.author }}</span>
+        <span class="author">{{ message.userName }}</span>
         <span v-if="isReply && message.replyTo" class="reply-to">
           <i class="fa fa-reply"></i>
           {{ message.replyTo }}

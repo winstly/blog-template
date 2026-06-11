@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { mockSocialLinks } from '@/api/mock'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
 
-const iconMap: Record<string, string> = {
-  'user': 'fa fa-user',
-  'book-open': 'fa fa-book',
-  'message-circle': 'fa fa-comments',
-  'snowflake': 'fa fa-snowflake-o',
-}
+const { socialLinks, fetchSocialLinks } = useSiteData();
+
+onMounted(() => {
+  fetchSocialLinks();
+});
 </script>
 
 <template>
@@ -14,9 +14,8 @@ const iconMap: Record<string, string> = {
     <div class="footer-links">
       <h2 class="footer-links__title">相关链接</h2>
       <ul class="footer-links__list">
-        <li v-for="link in mockSocialLinks" :key="link.label">
+        <li v-for="link in socialLinks" :key="link.code">
           <RouterLink :to="link.url">
-            <i :class="iconMap[link.icon]"></i>
             {{ link.label }}
           </RouterLink>
         </li>

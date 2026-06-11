@@ -5,6 +5,7 @@ import cn.yanshisan.blog.classification.domain.repository.RelationRepository;
 import cn.yanshisan.blog.classification.domain.vo.RelationType;
 import cn.yanshisan.blog.classification.infrastructure.persistence.mapper.ArticleTagMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -74,15 +75,17 @@ public class RelationRepositoryImpl implements RelationRepository {
 
     @Override
     public void logicalDeleteByArticleCode(String articleCode) {
-        LambdaQueryWrapper<ArticleTag> wrapper = new LambdaQueryWrapper<ArticleTag>()
-                .eq(ArticleTag::getArticleCode, articleCode);
-        articleTagMapper.delete(wrapper);
+        LambdaUpdateWrapper<ArticleTag> wrapper = new LambdaUpdateWrapper<ArticleTag>()
+                .eq(ArticleTag::getArticleCode, articleCode)
+                .set(ArticleTag::getIsDeleted, 1);
+        articleTagMapper.update(null, wrapper);
     }
 
     @Override
     public void logicalDeleteByTagCode(String tagCode) {
-        LambdaQueryWrapper<ArticleTag> wrapper = new LambdaQueryWrapper<ArticleTag>()
-                .eq(ArticleTag::getTagCode, tagCode);
-        articleTagMapper.delete(wrapper);
+        LambdaUpdateWrapper<ArticleTag> wrapper = new LambdaUpdateWrapper<ArticleTag>()
+                .eq(ArticleTag::getTagCode, tagCode)
+                .set(ArticleTag::getIsDeleted, 1);
+        articleTagMapper.update(null, wrapper);
     }
 }

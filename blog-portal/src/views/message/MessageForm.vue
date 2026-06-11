@@ -1,32 +1,45 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
+import { messageService } from '@/api/services';
 
-const content = ref('')
-const isSubmitting = ref(false)
+const content = ref('');
+const userName = ref('');
+const isSubmitting = ref(false);
 
-const showNotification = ref(false)
-const notificationMessage = ref('')
+const showNotification = ref(false);
+const notificationMessage = ref('');
+const notificationType = ref<'success' | 'error'>('success');
 
-function handleSubmit() {
-  if (!content.value.trim()) return
-  isSubmitting.value = true
-  setTimeout(() => {
-    notificationMessage.value = '留言功能暂未开放，敬请期待！'
-    showNotification.value = true
-    content.value = ''
-    isSubmitting.value = false
+async function handleSubmit() {
+  if (!content.value.trim()) return;
+  isSubmitting.value = true;
+  try {
+    await messageService.create({
+      userName: userName.value.trim() || '匿名用户',
+      remark: content.value.trim(),
+    });
+    notificationMessage.value = '留言成功！';
+    notificationType.value = 'success';
+    showNotification.value = true;
+    content.value = '';
+  } catch (e) {
+    notificationMessage.value = (e as Error).message || '留言失败，请稍后重试';
+    notificationType.value = 'error';
+    showNotification.value = true;
+  } finally {
+    isSubmitting.value = false;
     setTimeout(() => {
-      showNotification.value = false
-    }, 3000)
-  }, 500)
+      showNotification.value = false;
+    }, 3000);
+  }
 }
 </script>
 
 <template>
   <div class="message-form-wrap">
     <Transition name="notification">
-      <div v-if="showNotification" class="notification">
-        <i class="fa fa-info-circle"></i>
+      <div v-if="showNotification" :class="['notification', notificationType]">
+        <i :class="['fa', notificationType === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle']"></i>
         {{ notificationMessage }}
       </div>
     </Transition>
@@ -34,6 +47,13 @@ function handleSubmit() {
       <div class="form-header">
         <i class="fa fa-pencil"></i>
         <span>写下你的留言</span>
+      </div>
+      <div class="form-item">
+        <input
+          v-model="userName"
+          placeholder="你的昵称（可选）"
+          class="form-input"
+        />
       </div>
       <div class="form-item">
         <textarea
@@ -88,6 +108,28 @@ function handleSubmit() {
 
 .form-item:last-child {
   margin-bottom: 0;
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all var(--transition-base);
+  color: var(--color-text-secondary);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-accent-gradient-start);
+  box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-placeholder);
 }
 
 .form-textarea {
@@ -146,8 +188,6 @@ function handleSubmit() {
   top: var(--spacing-xl);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--gradient-accent);
-  color: var(--color-text-on-dark);
   padding: var(--spacing-md) var(--spacing-2xl);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-accent);
@@ -156,6 +196,16 @@ function handleSubmit() {
   gap: 10px;
   font-size: var(--font-size-base);
   z-index: var(--z-notification);
+}
+
+.notification.success {
+  background: var(--gradient-accent);
+  color: var(--color-text-on-dark);
+}
+
+.notification.error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
 }
 
 .notification i {

@@ -19,4 +19,16 @@ public interface InteractionRepository {
     List<Interaction> findRepliesByTarget(String targetType, String targetCode, Action actionType);
 
     long countRootsByTarget(String targetType, String targetCode, Action actionType);
+
+    void logicalDeleteById(Long id);
+
+    void updateDisplayStatus(Long id, Integer displayStatus);
+
+    void batchUpdateDisplayStatus(List<Long> ids, Integer displayStatus);
+
+    void batchLogicalDelete(List<Long> ids);
+
+    long countByTargetAndStatus(String targetType, String targetCode, Action action, Integer displayStatus);
+
+    List<Interaction> findRootsByTargetAndStatus(String targetType, String targetCode, Action action, Integer displayStatus, int page, int pageSize);
 }

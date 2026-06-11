@@ -1,148 +1,131 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue'
-import CommentSection from '@/components/shared/CommentSection.vue'
-import { mockArticles, mockProfile, mockMessages } from '@/api/mock'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import MarkdownRenderer from '@/components/shared/MarkdownRenderer.vue';
+import CommentSection from '@/components/shared/CommentSection.vue';
+import { articleService } from '@/api/services';
+import { messageService } from '@/api/services';
+import { useSiteData } from '@/composables';
+import type { Article, Message } from '@/api/types';
 
-const route = useRoute()
+const route = useRoute();
+const { profile, fetchProfile } = useSiteData();
 
-const article = computed(() => {
-  const id = route.params.id as string
-  return mockArticles.find((a) => a.id === id) || mockArticles[0]
-})
+const article = ref<Article | null>(null);
+const messages = ref<Message[]>([]);
+const loading = ref(true);
 
-const mockMarkdownContent = `## 前言
-
-这是一篇示例文章，用于展示 Markdown 渲染效果。
-
-## 代码示例
-
-\`\`\`typescript
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
-
-const route = useRoute()
-const articleId = computed(() => route.params.id)
-
-console.log('Article ID:', articleId.value)
-\`\`\`
-
-## Mermaid 图表
-
-\`\`\`mermaid
-graph TD
-    A[开始] --> B{是否登录?}
-    B -->|是| C[显示内容]
-    B -->|否| D[跳转登录]
-    D --> E[登录成功]
-    E --> C
-    C --> F[结束]
-\`\`\`
-
-## 列表示例
-
-1. 第一项
-2. 第二项
-3. 第三项
-
-- 无序列表项 1
-- 无序列表项 2
-- 无序列表项 3
-
-## 引用
-
-> 这是一段引用文字，用于展示引用块的样式效果。
-
-## 总结
-
-本文介绍了如何在 Vue 3 项目中集成 Markdown 渲染功能，并支持 Mermaid 图表渲染。
-`
+onMounted(async () => {
+  const code = route.params.id as string;
+  try {
+    const [articleResult, messagesResult] = await Promise.all([
+      articleService.getByCode(code),
+      messageService.getList({ page: 1, pageSize: 50 }),
+    ]);
+    article.value = articleResult;
+    messages.value = messagesResult.list;
+  } catch (e) {
+    console.error('Failed to fetch article:', e);
+  } finally {
+    loading.value = false;
+  }
+  fetchProfile();
+});
 
 const renderedContent = computed(() => {
-  if (!article.value) return ''
-  return mockMarkdownContent
-})
+  if (!article.value) return '';
+  return article.value.body ?? '';
+});
 
 const shareLinks = [
   { icon: 'fa-thumbs-up', color: '#ff6b6b' },
   { icon: 'fa-weixin', color: '#07C160' },
   { icon: 'fa-weibo', color: '#E6162D' },
   { icon: 'fa-qq', color: '#12B7F5' },
-]
+];
 </script>
 
 <template>
   <div class="article-page">
-    <!-- 返回按钮 -->
-    <RouterLink to="/blog" class="back-btn">
-      <i class="fa fa-arrow-left"></i>
-      <span>返回博客</span>
-    </RouterLink>
+    <template v-if="!loading && article">
+      <!-- 返回按钮 -->
+      <RouterLink to="/blog" class="back-btn">
+        <i class="fa fa-arrow-left"></i>
+        <span>返回博客</span>
+      </RouterLink>
 
-    <!-- 简洁标题栏 -->
-    <div class="article-banner">
-      <div class="banner-content">
-        <div class="meta-top">
-          <span class="date"><i class="fa fa-calendar-o"></i> {{ article?.date }}</span>
-          <span class="views"><i class="fa fa-eye"></i> {{ article?.views || 0 }}</span>
-        </div>
-        <h1>{{ article?.title }}</h1>
-        <div class="meta-bottom">
-          <span class="author"><i class="fa fa-user"></i> {{ article?.author || mockProfile.nickname }}</span>
-          <div class="tags">
-            <RouterLink
-              v-for="tag in article?.tags"
-              :key="tag"
-              :to="`/blog?tag=${tag}`"
-              class="tag"
-            >
-              {{ tag }}
-            </RouterLink>
+      <!-- 简洁标题栏 -->
+      <div class="article-banner">
+        <div class="banner-content">
+          <div class="meta-top">
+            <span class="date"><i class="fa fa-calendar-o"></i> {{ article.publishedAt ?? article.gmtCreate }}</span>
+            <span class="views"><i class="fa fa-eye"></i> {{ article.viewCount }}</span>
+          </div>
+          <h1>{{ article.title }}</h1>
+          <div class="meta-bottom">
+            <span class="author"><i class="fa fa-user"></i> {{ profile?.nickname ?? '' }}</span>
+            <div class="tags">
+              <RouterLink
+                v-for="tag in article.tags"
+                :key="tag.tagCode"
+                :to="`/blog?tag=${tag.tagCode}`"
+                class="tag"
+              >
+                {{ tag.tagName }}
+              </RouterLink>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="page-content">
+        <div class="container">
+          <!-- 文章主体 -->
+          <article class="article-main">
+            <div class="article-body">
+              <MarkdownRenderer :content="renderedContent" />
+            </div>
+
+            <!-- 版权声明 -->
+            <div class="copyright-notice">
+              <div class="notice-icon">
+                <i class="fa fa-copyright"></i>
+              </div>
+              <div class="notice-content">
+                <p class="notice-title">版权声明</p>
+                <p>本文版权归 <strong>{{ profile?.nickname ?? '' }}</strong> 所有，转载请注明出处。</p>
+                <p>本文链接：<RouterLink :to="`/article/${article.articleCode}`">{{ article.title }}</RouterLink></p>
+              </div>
+            </div>
+
+            <!-- 分享按钮 -->
+            <div class="share-section">
+              <span class="share-label">分享到：</span>
+              <div class="share-buttons">
+                <button
+                  v-for="share in shareLinks"
+                  :key="share.icon"
+                  class="share-btn"
+                  :style="{ '--share-color': share.color }"
+                >
+                  <i :class="['fa', share.icon]"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 评论区 -->
+            <CommentSection :messages="messages" id="comments" />
+          </article>
+        </div>
+      </div>
+    </template>
+
+    <div v-if="loading" class="loading-state">
+      <i class="fa fa-spinner fa-spin"></i> 加载中...
     </div>
 
-    <div class="page-content">
-      <div class="container">
-        <!-- 文章主体 -->
-        <article class="article-main">
-          <div class="article-body">
-            <MarkdownRenderer :content="renderedContent" />
-          </div>
-
-          <!-- 版权声明 -->
-          <div class="copyright-notice">
-            <div class="notice-icon">
-              <i class="fa fa-copyright"></i>
-            </div>
-            <div class="notice-content">
-              <p class="notice-title">版权声明</p>
-              <p>本文版权归 <strong>{{ mockProfile.nickname }}</strong> 所有，转载请注明出处。</p>
-              <p>本文链接：<RouterLink :to="article?.link || '#'">{{ article?.title }}</RouterLink></p>
-            </div>
-          </div>
-
-          <!-- 分享按钮 -->
-          <div class="share-section">
-            <span class="share-label">分享到：</span>
-            <div class="share-buttons">
-              <button
-                v-for="share in shareLinks"
-                :key="share.icon"
-                class="share-btn"
-                :style="{ '--share-color': share.color }"
-              >
-                <i :class="['fa', share.icon]"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- 评论区 -->
-          <CommentSection :messages="mockMessages" id="comments" />
-        </article>
-      </div>
+    <div v-if="!loading && !article" class="loading-state">
+      <i class="fa fa-exclamation-circle"></i> 文章未找到
     </div>
   </div>
 </template>
@@ -380,6 +363,17 @@ const shareLinks = [
 
 .share-btn i {
   font-size: var(--font-size-base);
+}
+
+/* Loading / empty state */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50vh;
+  color: var(--color-text-light);
+  font-size: var(--font-size-lg);
 }
 
 /* 响应式 */

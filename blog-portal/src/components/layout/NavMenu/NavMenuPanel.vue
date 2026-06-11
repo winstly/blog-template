@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { mockNavItems } from '@/api/mock'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
 
 interface Props {
-  isOpen: boolean
+  isOpen: boolean;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const emit = defineEmits<{
-  close: []
-}>()
+  close: [];
+}>();
+
+const { navItems, fetchNavItems } = useSiteData();
+
+onMounted(() => {
+  fetchNavItems();
+});
 </script>
 
 <template>
@@ -19,7 +26,7 @@ const emit = defineEmits<{
         <div v-if="isOpen" class="menu-panel" @click.stop>
           <nav class="menu-nav">
             <RouterLink
-              v-for="item in mockNavItems"
+              v-for="item in navItems"
               :key="item.path"
               :to="item.path"
               class="menu-item"

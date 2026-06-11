@@ -54,4 +54,41 @@ public class InteractionApplicationService {
 
         return new PageResult<>(vos, total, page, pageSize);
     }
+
+    public PageResult<InteractionVO> listByTargetAndStatus(String targetType, String targetCode,
+                                                            String actionType, Integer displayStatus,
+                                                            int page, int pageSize) {
+        Action action = Action.fromValue(actionType);
+        long total = interactionRepository.countByTargetAndStatus(targetType, targetCode, action, displayStatus);
+        List<Interaction> roots = interactionRepository.findRootsByTargetAndStatus(targetType, targetCode, action, displayStatus, page, pageSize);
+
+        if (roots.isEmpty()) {
+            return new PageResult<>(List.of(), total, page, pageSize);
+        }
+
+        List<Interaction> allReplies = interactionRepository.findRepliesByTarget(targetType, targetCode, action);
+        List<InteractionVO> vos = InteractionVO.buildTree(roots, allReplies);
+
+        return new PageResult<>(vos, total, page, pageSize);
+    }
+
+    public void approve(Long id) {
+        interactionService.approve(id);
+    }
+
+    public void deleteInteraction(Long id) {
+        interactionService.deleteInteraction(id);
+    }
+
+    public void batchApprove(List<Long> ids) {
+        interactionService.batchApprove(ids);
+    }
+
+    public void batchDelete(List<Long> ids) {
+        interactionService.batchDelete(ids);
+    }
+
+    public PageResult<InteractionVO> listMessages(Integer displayStatus, int page, int pageSize) {
+        return listByTargetAndStatus("site", "site", "message", displayStatus, page, pageSize);
+    }
 }

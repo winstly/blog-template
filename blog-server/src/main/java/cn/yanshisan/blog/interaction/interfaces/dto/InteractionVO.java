@@ -1,7 +1,8 @@
 package cn.yanshisan.blog.interaction.interfaces.dto;
 
 import cn.yanshisan.blog.interaction.domain.entity.Interaction;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -9,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Data
+@Getter
+@Setter
 public class InteractionVO {
 
     private Long id;
@@ -19,6 +21,7 @@ public class InteractionVO {
     private String location;
     private LocalDateTime date;
     private String replyTo;
+    private String status;  // "pending" or "approved"
     private List<InteractionVO> replies;
 
     public static InteractionVO from(Interaction interaction) {
@@ -29,6 +32,7 @@ public class InteractionVO {
         vo.setContent(interaction.getRemark());
         vo.setLocation(interaction.getExtMeta());
         vo.setDate(interaction.getGmtCreate());
+        vo.setStatus(interaction.getDisplayStatus() != null && interaction.getDisplayStatus() == 1 ? "approved" : "pending");
         return vo;
     }
 

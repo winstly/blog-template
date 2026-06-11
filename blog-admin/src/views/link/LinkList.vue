@@ -35,10 +35,10 @@
     </SearchCard>
 
     <el-card shadow="never">
-      <el-table v-loading="loading" :data="pagedLinks" row-key="id">
+      <el-table v-loading="loading" :data="pagedLinks" row-key="itemCode">
         <el-table-column label="排序" width="80">
           <template #default="{ row }">
-            <span class="text-gray-400">{{ row.order }}</span>
+            <span class="text-gray-400">{{ row.sortOrder }}</span>
           </template>
         </el-table-column>
         <el-table-column label="网站" min-width="250">
@@ -63,14 +63,6 @@
         <el-table-column label="描述" prop="description" min-width="200">
           <template #default="{ row }">
             <span class="text-gray-600 text-sm">{{ row.description || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-switch
-              v-model="row.active"
-              @change="(val: boolean) => handleStatusChange(row, val)"
-            />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
@@ -136,8 +128,8 @@
             placeholder="网站描述（可选）"
           />
         </el-form-item>
-        <el-form-item label="启用">
-          <el-switch v-model="form.active" />
+        <el-form-item label="排序">
+          <el-input-number v-model="form.sortOrder" :min="0" :max="999" class="w-full" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -164,15 +156,13 @@ const links = ref<FriendLink[]>([])
 // Search filters
 const filters = reactive({
   name: '',
-  active: undefined as boolean | undefined,
 })
 
 // 使用 computed 进行过滤
 const filteredLinks = computed(() => {
   return links.value.filter(link => {
     const nameMatch = !filters.name || link.name.toLowerCase().includes(filters.name.toLowerCase())
-    const statusMatch = filters.active === undefined || link.active === filters.active
-    return nameMatch && statusMatch
+    return nameMatch
   })
 })
 
@@ -193,7 +183,7 @@ function handlePageChange() {
 }
 const dialogVisible = ref(false)
 const isEdit = ref(false)
-const currentId = ref('')
+const currentCode = ref('')
 const formRef = ref<FormInstance>()
 
 const form = reactive({
@@ -201,7 +191,7 @@ const form = reactive({
   url: '',
   logo: '',
   description: '',
-  active: true,
+  sortOrder: 0,
 })
 
 const rules: FormRules = {
@@ -233,29 +223,28 @@ function handleSearch() {
 // 重置搜索 - 清空筛选条件并重置页码
 function handleReset() {
   filters.name = ''
-  filters.active = undefined
   pagination.page = 1
 }
 
 function handleCreate() {
   isEdit.value = false
-  currentId.value = ''
+  currentCode.value = ''
   form.name = ''
   form.url = ''
   form.logo = ''
   form.description = ''
-  form.active = true
+  form.sortOrder = 0
   dialogVisible.value = true
 }
 
 function handleEdit(link: FriendLink) {
   isEdit.value = true
-  currentId.value = link.id
+  currentCode.value = link.itemCode
   form.name = link.name
   form.url = link.url
   form.logo = link.logo || ''
   form.description = link.description || ''
-  form.active = link.active
+  form.sortOrder = link.sortOrder
   dialogVisible.value = true
 }
 
@@ -267,10 +256,22 @@ async function handleSubmit() {
 
   try {
     if (isEdit.value) {
-      await linkService.update(currentId.value, { ...form })
+      await linkService.update(currentCode.value, {
+        name: form.name,
+        url: form.url,
+        logo: form.logo || undefined,
+        description: form.description || undefined,
+        sortOrder: form.sortOrder,
+      })
       ElMessage.success('友链更新成功')
     } else {
-      await linkService.create({ ...form })
+      await linkService.create({
+        name: form.name,
+        url: form.url,
+        logo: form.logo || undefined,
+        description: form.description || undefined,
+        sortOrder: form.sortOrder,
+      })
       ElMessage.success('友链添加成功')
     }
 
@@ -282,19 +283,10 @@ async function handleSubmit() {
   }
 }
 
-async function handleStatusChange(link: FriendLink, active: boolean) {
-  try {
-    await linkService.update(link.id, { active })
-    ElMessage.success(active ? '已启用' : '已禁用')
-  } catch {
-    link.active = !active
-    ElMessage.error('操作失败')
-  }
-}
-
 async function handleMove(link: FriendLink, direction: -1 | 1) {
   try {
-    await linkService.reorderSingle(link.id, direction)
+    const newSortOrder = link.sortOrder + direction
+    await linkService.update(link.itemCode, { sortOrder: newSortOrder })
     ElMessage.success('排序已更新')
     loadLinks()
   } catch {
@@ -304,7 +296,7 @@ async function handleMove(link: FriendLink, direction: -1 | 1) {
 
 async function handleDelete(link: FriendLink) {
   try {
-    await linkService.delete(link.id)
+    await linkService.delete(link.itemCode)
     ElMessage.success('删除成功')
     loadLinks()
   } catch {

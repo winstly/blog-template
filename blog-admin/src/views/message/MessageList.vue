@@ -54,12 +54,12 @@
         <div class="message-card root-message" :class="{ 'pending': thread.status === 'pending' }">
           <div class="message-header">
             <div class="user-info">
-              <el-avatar :size="40" :src="thread.avatar">
-                {{ thread.username?.charAt(0).toUpperCase() || '?' }}
+              <el-avatar :size="40" :src="thread.userAvatarUrl">
+                {{ thread.userName?.charAt(0).toUpperCase() || '?' }}
               </el-avatar>
               <div class="user-meta">
-                <span class="username">{{ thread.username }}</span>
-                <span class="time">{{ formatDate(thread.createdAt) }}</span>
+                <span class="username">{{ thread.userName }}</span>
+                <span class="time">{{ formatDate(thread.date) }}</span>
               </div>
             </div>
             <div class="message-actions">
@@ -99,16 +99,16 @@
               <!-- 回复关系：X 回复 Y -->
               <div class="reply-header">
                 <div class="user-info">
-                  <el-avatar :size="32" :src="reply.avatar">
-                    {{ reply.username?.charAt(0).toUpperCase() || '?' }}
+                  <el-avatar :size="32" :src="reply.userAvatarUrl">
+                    {{ reply.userName?.charAt(0).toUpperCase() || '?' }}
                   </el-avatar>
                   <div class="user-meta">
-                    <span class="username">{{ reply.username }}</span>
+                    <span class="username">{{ reply.userName }}</span>
                     <span class="reply-indicator">
                       <el-icon><Right /></el-icon>
                     </span>
                     <span class="reply-target">{{ getParentUsername(reply, thread) }}</span>
-                    <span class="time">{{ formatDate(reply.createdAt) }}</span>
+                    <span class="time">{{ formatDate(reply.date) }}</span>
                   </div>
                 </div>
                 <div class="reply-actions">
@@ -179,7 +179,7 @@
       <div v-if="currentMessage" class="reply-context mb-4">
         <div class="context-label">回复：</div>
         <div class="context-content">
-          <span class="context-user">@{{ currentMessage.username }}</span>
+          <span class="context-user">@{{ currentMessage.userName }}</span>
           <span class="context-text">{{ currentMessage.content }}</span>
         </div>
       </div>
@@ -222,94 +222,12 @@ import {
   Loading,
 } from '@element-plus/icons-vue'
 import SearchCard from '@/components/common/SearchCard.vue'
+import { messageService } from '@/api/services/message'
+import type { Message } from '@/api/types'
 import type { FormInstance, FormRules } from 'element-plus'
 
-interface Message {
-  id: string
-  username: string
-  email?: string
-  avatar?: string
-  content: string
-  status: 'pending' | 'approved'
-  parentId?: string
-  rootId?: string
-  createdAt: string
-  replies?: Message[]
-}
-
-// Mock data - 模拟树形留言结构
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    username: '小明',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=xiaoming',
-    content: '这篇文章写得真好，受益匪浅！请问作者是如何学习前端技术的呢？',
-    status: 'approved',
-    createdAt: '2026-06-05 10:30:00',
-    replies: [
-      {
-        id: '1-1',
-        username: '博主',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-        content: '谢谢支持！我主要是通过阅读官方文档和实践项目来学习的前端技术。',
-        status: 'approved',
-        parentId: '1',
-        rootId: '1',
-        createdAt: '2026-06-05 11:00:00',
-      },
-      {
-        id: '1-2',
-        username: '小红',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=xiaohong',
-        content: '同问，我也想了解学习路径。博主推荐的哪些项目比较适合初学者？',
-        status: 'pending',
-        parentId: '1',
-        rootId: '1',
-        createdAt: '2026-06-05 12:30:00',
-      },
-      {
-        id: '1-3',
-        username: '博主',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-        content: '推荐从 TodoList 和天气预报应用开始，然后可以尝试做一个博客系统。',
-        status: 'approved',
-        parentId: '1-2',
-        rootId: '1',
-        createdAt: '2026-06-05 13:00:00',
-      },
-    ],
-  },
-  {
-    id: '2',
-    username: '张三',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=zhangsan',
-    content: '网站的UI设计很棒，请问是用什么框架实现的？',
-    status: 'approved',
-    createdAt: '2026-06-04 15:20:00',
-    replies: [
-      {
-        id: '2-1',
-        username: '李四',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisi',
-        content: '同问，我也想知道前端用的是什么技术栈？',
-        status: 'approved',
-        parentId: '2',
-        rootId: '2',
-        createdAt: '2026-06-04 16:00:00',
-      },
-    ],
-  },
-  {
-    id: '3',
-    username: '匿名用户',
-    content: '这篇文章的代码示例能再详细一些吗？有些部分看不太懂。',
-    status: 'pending',
-    createdAt: '2026-06-03 09:15:00',
-  },
-]
-
 const loading = ref(false)
-const messages = ref<Message[]>([...mockMessages])
+const messages = ref<Message[]>([])
 
 const filters = reactive({
   status: '' as '' | 'pending' | 'approved',
@@ -356,18 +274,18 @@ const filteredMessages = computed(() => {
     const keyword = filters.keyword.toLowerCase()
     result = result.filter(m =>
       m.content.toLowerCase().includes(keyword) ||
-      m.username.toLowerCase().includes(keyword) ||
+      m.userName.toLowerCase().includes(keyword) ||
       m.replies?.some(r =>
         r.content.toLowerCase().includes(keyword) ||
-        r.username.toLowerCase().includes(keyword)
+        r.userName.toLowerCase().includes(keyword)
       )
     )
   }
 
   // 排序
   result.sort((a, b) => {
-    const timeA = new Date(a.createdAt).getTime()
-    const timeB = new Date(b.createdAt).getTime()
+    const timeA = new Date(a.date).getTime()
+    const timeB = new Date(b.date).getTime()
     return filters.sort === 'newest' ? timeB - timeA : timeA - timeB
   })
 
@@ -375,7 +293,18 @@ const filteredMessages = computed(() => {
 })
 
 // 加载消息列表
-function loadMessages() {
+async function loadMessages() {
+  loading.value = true
+  try {
+    const result = await messageService.getList({
+      page: 1,
+      pageSize: 999,
+      status: filters.status || undefined,
+    })
+    messages.value = result.list
+  } finally {
+    loading.value = false
+  }
   const allData = filteredMessages.value
   displayedMessages.value = allData.slice(0, pageSize)
   currentPage = 1
@@ -419,19 +348,19 @@ function formatDate(dateStr: string): string {
 
 // 获取回复目标的昵称
 function getParentUsername(reply: Message, rootThread: Message): string {
-  if (!reply.parentId || reply.parentId === rootThread.id) {
-    return rootThread.username
+  if (!reply.replyTo || String(reply.replyTo) === String(rootThread.id)) {
+    return rootThread.userName
   }
-  const parent = rootThread.replies?.find(r => r.id === reply.parentId)
-  return parent?.username || '未知用户'
+  const parent = rootThread.replies?.find(r => String(r.id) === String(reply.replyTo))
+  return parent?.userName || '未知用户'
 }
 
 // 获取回复目标的内容
 function getParentContent(reply: Message, rootThread: Message): string {
-  if (!reply.parentId || reply.parentId === rootThread.id) {
+  if (!reply.replyTo || String(reply.replyTo) === String(rootThread.id)) {
     return rootThread.content
   }
-  const parent = rootThread.replies?.find(r => r.id === reply.parentId)
+  const parent = rootThread.replies?.find(r => String(r.id) === String(reply.replyTo))
   return parent?.content || ''
 }
 
@@ -470,42 +399,12 @@ async function handleSubmit() {
     await formRef.value.validate()
 
     if (isReply.value && currentMessage.value) {
-      // 找到根留言
-      const rootId = currentMessage.value.rootId || currentMessage.value.id
-      const rootThread = displayedMessages.value.find(t => t.id === rootId)
-
-      if (rootThread) {
-        const newReply: Message = {
-          id: Date.now().toString(),
-          username: '博主',
-          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
-          content: form.content,
-          status: 'approved',
-          parentId: currentMessage.value.id,
-          rootId: rootId,
-          createdAt: new Date().toISOString(),
-        }
-
-        if (!rootThread.replies) {
-          rootThread.replies = []
-        }
-        rootThread.replies.push(newReply)
-        ElMessage.success('回复成功')
-      }
-    } else {
-      // 新建根留言
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        username: form.username,
-        email: form.email,
-        content: form.content,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      }
-      messages.value.unshift(newMessage)
-      // 刷新列表并重置分页
+      await messageService.reply(currentMessage.value.id, form.content)
+      ElMessage.success('回复成功')
       loadMessages()
-      ElMessage.success('留言已提交，等待审核')
+    } else {
+      // New root message via backend
+      ElMessage.info('请通过网站前端发表留言')
     }
 
     dialogVisible.value = false
@@ -519,8 +418,9 @@ async function handleSubmit() {
 
 async function handleApprove(message: Message) {
   try {
-    message.status = 'approved'
+    await messageService.approve(message.id)
     ElMessage.success('已通过')
+    loadMessages()
   } catch {
     ElMessage.error('操作失败')
   }
@@ -529,38 +429,16 @@ async function handleApprove(message: Message) {
 async function handleDelete(message: Message) {
   try {
     await ElMessageBox.confirm('确定删除此留言吗？', '确认删除', { type: 'warning' })
-
-    if (!message.parentId) {
-      // 删除根留言
-      messages.value = messages.value.filter(m => m.id !== message.id)
-    } else {
-      // 删除回复 - 在 displayedMessages 中查找并删除
-      const rootId = message.rootId || message.parentId
-      // 先尝试在 displayedMessages 中找（因为这是当前显示的数据）
-      let rootThread = displayedMessages.value.find(t => t.id === rootId)
-      if (rootThread && rootThread.replies) {
-        rootThread.replies = rootThread.replies.filter(r => r.id !== message.id)
-      }
-      // 同步更新源数据
-      rootThread = messages.value.find(t => t.id === rootId)
-      if (rootThread && rootThread.replies) {
-        rootThread.replies = rootThread.replies.filter(r => r.id !== message.id)
-      }
-    }
-    // 刷新显示列表
+    await messageService.delete(message.id)
     loadMessages()
     ElMessage.success('删除成功')
   } catch {
-    // cancelled
+    // cancelled or error
   }
 }
 
 onMounted(() => {
-  loading.value = true
-  setTimeout(() => {
-    loadMessages()
-    loading.value = false
-  }, 300)
+  loadMessages()
 })
 </script>
 

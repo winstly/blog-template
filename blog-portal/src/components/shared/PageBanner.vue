@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
 
 interface Props {
-  title: string
-  subtitle?: string
-  color?: string
+  title: string;
+  subtitle?: string;
+  color?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   subtitle: '',
   color: '#667eea',
-})
+});
+
+const { profile, fetchProfile } = useSiteData();
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -18,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
     <div class="banner-content">
       <h1>{{ title }}</h1>
       <p v-if="subtitle">{{ subtitle }}</p>
-      <p v-else>{{ mockProfile.signature }}</p>
+      <p v-else>{{ profile?.signature ?? '' }}</p>
     </div>
   </div>
 </template>

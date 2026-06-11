@@ -1,29 +1,54 @@
 <script setup lang="ts">
-import PageBanner from '@/components/shared/PageBanner.vue'
-import { getDiariesByYear, getYears } from '@/api/mock'
+import { ref, onMounted } from 'vue';
+import PageBanner from '@/components/shared/PageBanner.vue';
+import { diaryService } from '@/api/services';
+import type { DiaryEntry } from '@/api/types';
 
-const groupedByYear = getDiariesByYear()
-const years = getYears()
+const groupedByYear = ref<Record<number, DiaryEntry[]>>({});
+const years = ref<number[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const [diaryResult, yearsResult] = await Promise.all([
+      diaryService.getList({ page: 1, pageSize: 100 }),
+      diaryService.getYears(),
+    ]);
+    const entries = diaryResult.list;
+    years.value = yearsResult;
+
+    const grouped: Record<number, DiaryEntry[]> = {};
+    for (const entry of entries) {
+      if (!grouped[entry.year]) {
+        grouped[entry.year] = [];
+      }
+      grouped[entry.year].push(entry);
+    }
+    groupedByYear.value = grouped;
+  } catch (e) {
+    console.error('Failed to fetch diary data:', e);
+  } finally {
+    loading.value = false;
+  }
+});
 
 function formatDate(dateStr: string): string {
-  const parts = dateStr.split('-')
+  const parts = dateStr.split('-');
   if (parts.length >= 3) {
-    return `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日`
+    return `${parts[0]}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
   }
-  return dateStr
+  return dateStr;
 }
 
-const expandedYears = ref<Set<number>>(new Set(years.map(y => y)))
+const expandedYears = ref<Set<number>>(new Set());
 
 function toggleYear(year: number) {
   if (expandedYears.value.has(year)) {
-    expandedYears.value.delete(year)
+    expandedYears.value.delete(year);
   } else {
-    expandedYears.value.add(year)
+    expandedYears.value.add(year);
   }
 }
-
-import { ref } from 'vue'
 </script>
 
 <template>
@@ -35,7 +60,7 @@ import { ref } from 'vue'
     />
     <div class="doc-container">
       <div class="container-fixed">
-        <div class="diary-content">
+        <div v-if="!loading" class="diary-content">
           <div v-for="year in years" :key="year" class="year-group">
             <div class="year-header" @click="toggleYear(year)">
               <h2>{{ year }}</h2>
@@ -47,12 +72,12 @@ import { ref } from 'vue'
               <div v-show="expandedYears.has(year)" class="diary-grid">
                 <div
                   v-for="entry in groupedByYear[year]"
-                  :key="entry.id"
+                  :key="entry.diaryCode"
                   class="diary-card"
                 >
                   <div class="card-date">
                     <i class="fa fa-calendar-o"></i>
-                    {{ formatDate(entry.date) }}
+                    {{ formatDate(entry.diaryDate) }}
                   </div>
                   <div class="card-content" v-html="entry.content"></div>
                 </div>
@@ -64,6 +89,10 @@ import { ref } from 'vue'
             <i class="fa fa-book"></i>
             <p>暂无日记</p>
           </div>
+        </div>
+        <div v-else class="empty-state">
+          <i class="fa fa-spinner fa-spin"></i>
+          <p>加载中...</p>
         </div>
       </div>
     </div>

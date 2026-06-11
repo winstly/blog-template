@@ -38,8 +38,8 @@
       <el-tree
         v-loading="loading"
         :data="treeData"
-        node-key="id"
-        :props="{ label: 'name', children: 'children' }"
+        node-key="tagCode"
+        :props="{ label: 'tagName', children: 'children' }"
         :expand-on-click-node="false"
         default-expand-all
         draggable
@@ -70,20 +70,20 @@
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="父分类">
           <el-tree-select
-            v-model="form.parentId"
+            v-model="form.parentTagCode"
             :data="categoryTree"
-            :props="{ label: 'name', value: 'id' }"
+            :props="{ label: 'tagName', value: 'tagCode' }"
             placeholder="选择父分类（不选为顶级分类）"
             clearable
             check-strictly
             class="w-full"
           />
         </el-form-item>
-        <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入分类名称" />
+        <el-form-item label="名称" prop="tagName">
+          <el-input v-model="form.tagName" placeholder="请输入分类名称" />
         </el-form-item>
         <el-form-item label="排序">
-          <el-input-number v-model="form.sort" :min="0" :max="999" class="w-full" />
+          <el-input-number v-model="form.sortOrder" :min="0" :max="999" class="w-full" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -101,7 +101,6 @@ import { Plus } from '@element-plus/icons-vue'
 import CategoryTreeNode from './components/CategoryTreeNode.vue'
 import SearchCard from '@/components/common/SearchCard.vue'
 import { categoryService } from '@/api/services/category'
-import { buildTree } from '@/utils/tree'
 import type { Category } from '@/api/types'
 import type { FormInstance, FormRules } from 'element-plus'
 import type Node from 'element-plus/es/components/tree/src/model/node'
@@ -116,54 +115,38 @@ const filters = reactive({
   level: '' as '' | 'root' | 'child',
 })
 
-// 树数据 - 使用 filteredCategories 构建层级结构
-const filteredCategories = computed(() => {
-  // 无筛选条件时返回全部数据
+// 树数据 - 后端已返回嵌套结构，直接使用
+const treeData = computed(() => {
   if (!filters.name && !filters.level) {
     return categories.value
   }
 
-  const all = categories.value
+  // Filter tree recursively
+  function filterTree(nodes: Category[]): Category[] {
+    return nodes
+      .map(node => {
+        const nameMatch = !filters.name || node.tagName.toLowerCase().includes(filters.name.toLowerCase())
+        const levelMatch = !filters.level ||
+          (filters.level === 'root' ? node.treeDepth === 1 : node.treeDepth > 1)
+        const filteredChildren = node.children ? filterTree(node.children) : []
 
-  // 筛选匹配的节点
-  let filtered = all.filter(cat => {
-    const nameMatch = !filters.name || cat.name.toLowerCase().includes(filters.name.toLowerCase())
-    const levelMatch = !filters.level ||
-      (filters.level === 'root' ? !cat.parentId : !!cat.parentId)
-    return nameMatch && levelMatch
-  })
-
-  // 收集相关节点的 ID（祖先和子节点）
-  const relatedIds = new Set<string>()
-  filtered.forEach(item => {
-    relatedIds.add(item.id)
-    // 添加所有祖先
-    let current = item
-    while (current.parentId) {
-      relatedIds.add(current.parentId)
-      current = all.find(c => c.id === current.parentId) || current
-    }
-    // 添加所有子节点
-    const addChildIds = (parentId: string) => {
-      all.filter(c => c.parentId === parentId).forEach(c => {
-        relatedIds.add(c.id)
-        addChildIds(c.id)
+        if (nameMatch && levelMatch) {
+          return { ...node, children: filteredChildren.length > 0 ? filteredChildren : node.children }
+        }
+        if (filteredChildren.length > 0) {
+          return { ...node, children: filteredChildren }
+        }
+        return null
       })
-    }
-    addChildIds(item.id)
-  })
+      .filter((n): n is Category => n !== null)
+  }
 
-  return all.filter(c => relatedIds.has(c.id))
-})
-
-// treeData 使用 filteredCategories 构建树
-const treeData = computed(() => {
-  return buildTree(filteredCategories.value, { sortBy: 'sort' })
+  return filterTree(categories.value)
 })
 
 // 构建分类树用于下拉选择
 const categoryTree = computed(() => {
-  return buildTree(categories.value, { sortBy: 'sort' })
+  return categories.value
 })
 
 // 加载所有分类
@@ -191,22 +174,22 @@ function handleReset() {
 }
 
 const isEdit = ref(false)
-const currentId = ref('')
+const currentCode = ref('')
 
 const dialogTitle = computed(() => {
   if (isEdit.value) return '编辑分类'
-  return currentId.value ? '添加子分类' : '新建分类'
+  return currentCode.value ? '添加子分类' : '新建分类'
 })
 
 const formRef = ref<FormInstance>()
 const form = ref({
-  name: '',
-  parentId: undefined as string | undefined,
-  sort: 0,
+  tagName: '',
+  parentTagCode: undefined as string | undefined,
+  sortOrder: 0,
 })
 
 const rules: FormRules = {
-  name: [
+  tagName: [
     { required: true, message: '请输入分类名称', trigger: 'blur' },
     { min: 1, max: 20, message: '长度在 1 到 20 个字符', trigger: 'blur' },
   ],
@@ -214,33 +197,33 @@ const rules: FormRules = {
 
 function handleCreate() {
   isEdit.value = false
-  currentId.value = ''
+  currentCode.value = ''
   form.value = {
-    name: '',
-    parentId: undefined,
-    sort: 0,
+    tagName: '',
+    parentTagCode: undefined,
+    sortOrder: 0,
   }
   dialogVisible.value = true
 }
 
 function handleAddChild(parent: Category) {
   isEdit.value = false
-  currentId.value = parent.id
+  currentCode.value = parent.tagCode
   form.value = {
-    name: '',
-    parentId: parent.id,
-    sort: 0,
+    tagName: '',
+    parentTagCode: parent.tagCode,
+    sortOrder: 0,
   }
   dialogVisible.value = true
 }
 
 function handleEdit(category: Category) {
   isEdit.value = true
-  currentId.value = category.id
+  currentCode.value = category.tagCode
   form.value = {
-    name: category.name,
-    parentId: category.parentId,
-    sort: category.sort || 0,
+    tagName: category.tagName,
+    parentTagCode: category.treePath || undefined,
+    sortOrder: category.sortOrder || 0,
   }
   dialogVisible.value = true
 }
@@ -254,17 +237,16 @@ async function handleSubmit() {
 
   try {
     if (isEdit.value) {
-      await categoryService.update(currentId.value, {
-        name: form.value.name,
-        parentId: form.value.parentId,
-        sort: form.value.sort,
+      await categoryService.update(currentCode.value, {
+        tagName: form.value.tagName,
+        displayStatus: 1,
       })
       ElMessage.success('分类更新成功')
     } else {
       await categoryService.create({
-        name: form.value.name,
-        parentId: form.value.parentId,
-        sort: form.value.sort,
+        tagCode: 'cat_' + Date.now(),
+        tagName: form.value.tagName,
+        parentTagCode: form.value.parentTagCode,
       })
       ElMessage.success('分类创建成功')
     }
@@ -279,14 +261,14 @@ async function handleSubmit() {
 
 async function handleDelete(category: Category) {
   // 检查是否有子节点
-  const hasChildren = categories.value.some(c => c.parentId === category.id)
+  const hasChildren = category.children && category.children.length > 0
   if (hasChildren) {
     ElMessage.error('请先删除子分类')
     return
   }
 
   try {
-    await categoryService.delete(category.id)
+    await categoryService.delete(category.tagCode)
     ElMessage.success('删除成功')
     await loadCategories()
   } catch (error) {
@@ -303,10 +285,10 @@ function allowDrop(
 ): boolean {
   if (type === 'inner') {
     // 不允许拖入自己的子节点
-    const isDescendant = (parent: Category, childId: string): boolean => {
-      if (parent.id === childId) return true
+    const isDescendant = (parent: Category, childCode: string): boolean => {
+      if (parent.tagCode === childCode) return true
       if (parent.children) {
-        return parent.children.some(child => isDescendant(child, childId))
+        return parent.children.some(child => isDescendant(child, childCode))
       }
       return false
     }
@@ -314,7 +296,7 @@ function allowDrop(
     const dragData = _draggingNode.data as Category
     const dropData = dropNode.data as Category
 
-    if (isDescendant(dragData, dropData.id)) {
+    if (isDescendant(dragData, dropData.tagCode)) {
       return false
     }
   }
@@ -330,17 +312,15 @@ async function handleDrop(
   const dragData = draggingNode.data as Category
   const dropData = dropNode.data as Category
 
-  let newParentId: string | undefined
+  let newParentTagCode: string | null = null
   if (type === 'inner') {
-    newParentId = dropData.id
+    newParentTagCode = dropData.tagCode
   } else {
-    newParentId = dropData.parentId
+    newParentTagCode = dropData.treePath || null
   }
 
   try {
-    await categoryService.update(dragData.id, {
-      parentId: newParentId,
-    })
+    await categoryService.move(dragData.tagCode, newParentTagCode)
     ElMessage.success('移动成功')
     await loadCategories()
   } catch (error) {

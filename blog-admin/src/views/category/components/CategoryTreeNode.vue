@@ -5,9 +5,9 @@
         <Folder v-if="!node.isLeaf || data.hasChildren" />
         <Document v-else />
       </el-icon>
-      <span class="node-label">{{ data.name }}</span>
+      <span class="node-label">{{ data.tagName }}</span>
       <el-tag size="small" type="info" class="node-count">
-        {{ data.count || 0 }} 篇文章
+        {{ data.articleCount || 0 }} 篇文章
       </el-tag>
     </div>
     <div class="node-actions">

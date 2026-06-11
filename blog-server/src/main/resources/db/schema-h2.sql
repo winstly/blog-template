@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS blog_interaction (
   tree_path       VARCHAR(512) DEFAULT NULL,
   tree_depth      TINYINT      NOT NULL DEFAULT 0,
   ext_meta        CLOB         DEFAULT NULL,
+  display_status  TINYINT      NOT NULL DEFAULT 1,
 
   PRIMARY KEY (id)
 );
@@ -144,4 +145,21 @@ CREATE TABLE IF NOT EXISTS blog_content_revision (
 
   PRIMARY KEY (id),
   CONSTRAINT uk_revision_ver UNIQUE (content_id, version)
+);
+
+-- 8. blog_diary
+CREATE TABLE IF NOT EXISTS blog_diary (
+  id              BIGINT       NOT NULL AUTO_INCREMENT,
+  creator         VARCHAR(64)  NOT NULL DEFAULT '',
+  gmt_create      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  modifier        VARCHAR(64)  NOT NULL DEFAULT '',
+  gmt_modified    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  is_deleted      TINYINT      NOT NULL DEFAULT 0,
+  diary_code      VARCHAR(128) NOT NULL DEFAULT '',
+  content         CLOB         NOT NULL,
+  images          CLOB         DEFAULT NULL,
+  diary_date      DATE         NOT NULL,
+  year            INT          NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uk_diary_code UNIQUE (diary_code)
 );

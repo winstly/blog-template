@@ -12,11 +12,11 @@ defineProps<Props>()
   <div class="tag-cloud">
     <RouterLink
       v-for="tag in tags"
-      :key="tag.id"
-      :to="`/blog?tag=${tag.id}`"
+      :key="tag.tagCode"
+      :to="`/blog?tag=${tag.tagCode}`"
       class="tag-item"
     >
-      {{ tag.name }}
+      {{ tag.tagName }}
     </RouterLink>
   </div>
 </template>

@@ -3,10 +3,12 @@ package cn.yanshisan.blog.content.domain.entity;
 import cn.yanshisan.blog.content.domain.vo.PublishStatus;
 import cn.yanshisan.blog.shared.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @TableName("blog_content")
 public class Content extends BaseEntity {
@@ -39,6 +41,10 @@ public class Content extends BaseEntity {
 
     public void publish() {
         this.publishStatus = PublishStatus.PUBLISHED;
+    }
+
+    public void unpublish() {
+        this.publishStatus = PublishStatus.DRAFT;
     }
 
     public ContentRevision createRevision(String changeSummary) {

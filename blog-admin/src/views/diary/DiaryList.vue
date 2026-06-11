@@ -42,22 +42,22 @@
     <el-timeline v-loading="loading">
       <el-timeline-item
         v-for="diary in displayedDiaries"
-        :key="diary.id"
-        :timestamp="formatDate(diary.date)"
+        :key="diary.diaryCode"
+        :timestamp="formatDate(diary.diaryDate)"
         placement="top"
       >
         <el-card shadow="hover">
           <div class="flex items-start justify-between">
             <div class="flex-1">
               <p class="text-gray-800 whitespace-pre-wrap">{{ diary.content }}</p>
-              <div v-if="diary.images?.length" class="flex gap-2 mt-3">
+              <div v-if="getDiaryImages(diary.images).length" class="flex gap-2 mt-3">
                 <el-image
-                  v-for="(img, idx) in diary.images"
+                  v-for="(img, idx) in getDiaryImages(diary.images)"
                   :key="idx"
                   :src="img"
                   class="w-24 h-24 rounded object-cover cursor-pointer"
                   preview-teleported
-                  :preview-src-list="diary.images"
+                  :preview-src-list="getDiaryImages(diary.images)"
                   :initial-index="idx"
                 />
               </div>
@@ -99,9 +99,9 @@
       size="500px"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="日期" prop="date">
+        <el-form-item label="日期" prop="diaryDate">
           <el-date-picker
-            v-model="form.date"
+            v-model="form.diaryDate"
             type="date"
             placeholder="选择日期"
             class="w-full"
@@ -143,7 +143,7 @@ import { ElMessage } from 'element-plus'
 import { Plus, Loading } from '@element-plus/icons-vue'
 import SearchCard from '@/components/common/SearchCard.vue'
 import { diaryService } from '@/api/services/diary'
-import type { DiaryEntry } from '@/api/types'
+import type { DiaryEntry, PaginationResult } from '@/api/types'
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 
 const loading = ref(false)
@@ -164,18 +164,18 @@ const pageSize = 10
 let currentPage = 1
 
 const isEdit = ref(false)
-const currentId = ref('')
+const currentCode = ref('')
 const formRef = ref<FormInstance>()
 const imageFiles = ref<UploadFile[]>([])
 
 const form = reactive({
-  date: '',
+  diaryDate: '',
   content: '',
-  images: [] as string[],
+  images: '' as string,
 })
 
 const rules: FormRules = {
-  date: [{ required: true, message: '请选择日期', trigger: 'change' }],
+  diaryDate: [{ required: true, message: '请选择日期', trigger: 'change' }],
   content: [
     { required: true, message: '请输入内容', trigger: 'blur' },
     { min: 1, max: 2000, message: '长度在 1 到 2000 个字符', trigger: 'blur' },
@@ -185,15 +185,26 @@ const rules: FormRules = {
 const availableYears = computed(() => {
   const years = new Set<string>()
   diaries.value.forEach(d => {
-    years.add(d.date.slice(0, 4))
+    years.add(d.diaryDate.slice(0, 4))
   })
   return Array.from(years).sort((a, b) => b.localeCompare(a))
 })
 
+// Helper to parse images string to array
+function getDiaryImages(images: string | null): string[] {
+  if (!images) return []
+  try {
+    const parsed = JSON.parse(images)
+    return Array.isArray(parsed) ? parsed : [images]
+  } catch {
+    return images.split(',').map(s => s.trim()).filter(Boolean)
+  }
+}
+
 // Filtered diaries based on filters
 const filteredDiaries = computed(() => {
   return diaries.value.filter(diary => {
-    const yearMatch = !filters.year || diary.date.startsWith(filters.year)
+    const yearMatch = !filters.year || diary.diaryDate.startsWith(filters.year)
     const keywordMatch = !filters.keyword ||
       diary.content.toLowerCase().includes(filters.keyword.toLowerCase())
     return yearMatch && keywordMatch
@@ -213,7 +224,8 @@ async function loadDiaries() {
   loading.value = true
   try {
     const year = filters.year ? parseInt(filters.year) : undefined
-    diaries.value = await diaryService.getList({ year })
+    const result = await diaryService.getList({ page: 1, pageSize: 999, year })
+    diaries.value = result.list
     // Reset waterfall state
     currentPage = 1
     displayedDiaries.value = filteredDiaries.value.slice(0, pageSize)
@@ -261,21 +273,22 @@ function handleReset() {
 
 function handleCreate() {
   isEdit.value = false
-  currentId.value = ''
-  form.date = new Date().toISOString().slice(0, 10)
+  currentCode.value = ''
+  form.diaryDate = new Date().toISOString().slice(0, 10)
   form.content = ''
-  form.images = []
+  form.images = ''
   imageFiles.value = []
   dialogVisible.value = true
 }
 
 function handleEdit(diary: DiaryEntry) {
   isEdit.value = true
-  currentId.value = diary.id
-  form.date = diary.date
+  currentCode.value = diary.diaryCode
+  form.diaryDate = diary.diaryDate
   form.content = diary.content
-  form.images = diary.images ? [...diary.images] : []
-  imageFiles.value = form.images.map((url, idx) => ({
+  form.images = diary.images || ''
+  const imageList = getDiaryImages(diary.images)
+  imageFiles.value = imageList.map((url, idx) => ({
     name: `image-${idx}.jpg`,
     url,
     uid: idx,
@@ -286,7 +299,9 @@ function handleEdit(diary: DiaryEntry) {
 function handleImageChange(file: UploadFile) {
   const reader = new FileReader()
   reader.onload = (e) => {
-    form.images.push(e.target?.result as string)
+    const currentImages = getDiaryImages(form.images)
+    currentImages.push(e.target?.result as string)
+    form.images = JSON.stringify(currentImages)
   }
   reader.readAsDataURL(file.raw!)
 }
@@ -294,7 +309,9 @@ function handleImageChange(file: UploadFile) {
 function handleImageRemove(file: UploadFile) {
   const idx = imageFiles.value.findIndex(f => f.uid === file.uid)
   if (idx > -1) {
-    form.images.splice(idx, 1)
+    const currentImages = getDiaryImages(form.images)
+    currentImages.splice(idx, 1)
+    form.images = currentImages.length > 0 ? JSON.stringify(currentImages) : ''
   }
 }
 
@@ -306,10 +323,18 @@ async function handleSubmit() {
 
   try {
     if (isEdit.value) {
-      await diaryService.update(currentId.value, { ...form })
+      await diaryService.update(currentCode.value, {
+        content: form.content,
+        images: form.images || undefined,
+        diaryDate: form.diaryDate,
+      })
       ElMessage.success('日记更新成功')
     } else {
-      await diaryService.create({ ...form })
+      await diaryService.create({
+        content: form.content,
+        images: form.images || undefined,
+        diaryDate: form.diaryDate,
+      })
       ElMessage.success('日记创建成功')
     }
 
@@ -323,7 +348,7 @@ async function handleSubmit() {
 
 async function handleDelete(diary: DiaryEntry) {
   try {
-    await diaryService.delete(diary.id)
+    await diaryService.delete(diary.diaryCode)
     ElMessage.success('删除成功')
     loadDiaries()
   } catch {

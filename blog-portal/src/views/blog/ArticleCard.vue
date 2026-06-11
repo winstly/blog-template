@@ -1,32 +1,32 @@
 <script setup lang="ts">
-import type { Article } from '@/api/types'
+import type { Article } from '@/api/types';
 
 interface Props {
-  article: Article
+  article: Article;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>
   <article class="article-card">
-    <div v-if="article.isTop" class="top-badge">置顶</div>
+    <div v-if="article.isPinned" class="top-badge">置顶</div>
 
     <div class="card-header">
       <h2 class="title">
-        <RouterLink :to="article.link">{{ article.title }}</RouterLink>
+        <RouterLink :to="`/article/${article.articleCode}`">{{ article.title }}</RouterLink>
       </h2>
       <div class="meta">
         <span class="date">
           <i class="fa fa-calendar-o"></i>
-          {{ article.date }}
+          {{ article.publishedAt ?? article.gmtCreate }}
         </span>
       </div>
     </div>
 
     <div class="card-body">
-      <RouterLink :to="article.link" class="cover">
-        <img :src="article.cover" :alt="article.title" />
+      <RouterLink :to="`/article/${article.articleCode}`" class="cover">
+        <img :src="article.coverUrl ?? ''" :alt="article.title" />
       </RouterLink>
       <p class="summary">{{ article.summary }}</p>
     </div>
@@ -36,20 +36,19 @@ defineProps<Props>()
         <i class="fa fa-tags"></i>
         <RouterLink
           v-for="tag in article.tags"
-          :key="tag"
-          :to="`/blog?tag=${tag}`"
+          :key="tag.tagCode"
+          :to="`/blog?tag=${tag.tagCode}`"
           class="tag"
         >
-          {{ tag }}
+          {{ tag.tagName }}
         </RouterLink>
       </div>
       <div class="stats">
-        <span><i class="fa fa-eye"></i> {{ article.views || 0 }}</span>
-        <span><i class="fa fa-comments"></i> {{ article.comments || 0 }}</span>
+        <span><i class="fa fa-eye"></i> {{ article.viewCount }}</span>
       </div>
     </div>
 
-    <RouterLink :to="article.link" class="read-more">
+    <RouterLink :to="`/article/${article.articleCode}`" class="read-more">
       阅读全文 <i class="fa fa-angle-right"></i>
     </RouterLink>
   </article>

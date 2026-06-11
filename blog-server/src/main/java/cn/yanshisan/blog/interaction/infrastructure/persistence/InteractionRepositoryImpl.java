@@ -5,6 +5,7 @@ import cn.yanshisan.blog.interaction.domain.repository.InteractionRepository;
 import cn.yanshisan.blog.interaction.domain.vo.Action;
 import cn.yanshisan.blog.interaction.infrastructure.persistence.mapper.InteractionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -63,5 +64,71 @@ public class InteractionRepositoryImpl implements InteractionRepository {
                 .eq(Interaction::getActionType, actionType)
                 .eq(Interaction::getTreeDepth, 0);
         return interactionMapper.selectCount(wrapper);
+    }
+
+    @Override
+    public void logicalDeleteById(Long id) {
+        LambdaUpdateWrapper<Interaction> wrapper = new LambdaUpdateWrapper<Interaction>()
+                .eq(Interaction::getId, id)
+                .set(Interaction::getIsDeleted, 1);
+        interactionMapper.update(null, wrapper);
+    }
+
+    @Override
+    public void updateDisplayStatus(Long id, Integer displayStatus) {
+        LambdaUpdateWrapper<Interaction> wrapper = new LambdaUpdateWrapper<Interaction>()
+                .eq(Interaction::getId, id)
+                .set(Interaction::getDisplayStatus, displayStatus);
+        interactionMapper.update(null, wrapper);
+    }
+
+    @Override
+    public void batchUpdateDisplayStatus(List<Long> ids, Integer displayStatus) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        LambdaUpdateWrapper<Interaction> wrapper = new LambdaUpdateWrapper<Interaction>()
+                .in(Interaction::getId, ids)
+                .set(Interaction::getDisplayStatus, displayStatus);
+        interactionMapper.update(null, wrapper);
+    }
+
+    @Override
+    public void batchLogicalDelete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        LambdaUpdateWrapper<Interaction> wrapper = new LambdaUpdateWrapper<Interaction>()
+                .in(Interaction::getId, ids)
+                .set(Interaction::getIsDeleted, 1);
+        interactionMapper.update(null, wrapper);
+    }
+
+    @Override
+    public long countByTargetAndStatus(String targetType, String targetCode, Action action, Integer displayStatus) {
+        LambdaQueryWrapper<Interaction> wrapper = new LambdaQueryWrapper<Interaction>()
+                .eq(Interaction::getTargetType, targetType)
+                .eq(Interaction::getTargetCode, targetCode)
+                .eq(Interaction::getActionType, action)
+                .eq(Interaction::getTreeDepth, 0);
+        if (displayStatus != null) {
+            wrapper.eq(Interaction::getDisplayStatus, displayStatus);
+        }
+        return interactionMapper.selectCount(wrapper);
+    }
+
+    @Override
+    public List<Interaction> findRootsByTargetAndStatus(String targetType, String targetCode, Action action, Integer displayStatus, int page, int pageSize) {
+        LambdaQueryWrapper<Interaction> wrapper = new LambdaQueryWrapper<Interaction>()
+                .eq(Interaction::getTargetType, targetType)
+                .eq(Interaction::getTargetCode, targetCode)
+                .eq(Interaction::getActionType, action)
+                .eq(Interaction::getTreeDepth, 0);
+        if (displayStatus != null) {
+            wrapper.eq(Interaction::getDisplayStatus, displayStatus);
+        }
+        wrapper.orderByDesc(Interaction::getGmtCreate)
+                .last("LIMIT " + pageSize + " OFFSET " + (page - 1) * pageSize);
+        return interactionMapper.selectList(wrapper);
     }
 }

@@ -261,12 +261,12 @@ onMounted(() => {
             class="comment-item"
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
-            <el-avatar :size="36" :src="message.avatar" class="comment-avatar">
-              {{ message.username.charAt(0).toUpperCase() }}
+            <el-avatar :size="36" :src="message.userAvatarUrl" class="comment-avatar">
+              {{ message.userName.charAt(0).toUpperCase() }}
             </el-avatar>
             <div class="comment-content">
               <div class="comment-header">
-                <span class="comment-author">{{ message.username }}</span>
+                <span class="comment-author">{{ message.userName }}</span>
                 <span class="comment-time">{{ formatRelativeDate(message.date) }}</span>
               </div>
               <p class="comment-text">{{ message.content }}</p>

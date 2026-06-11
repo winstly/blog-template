@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public R<Void> handleBusinessException(BusinessException e) {
         log.warn("Business error: code={}, message={}", e.getCode(), e.getMessage());
         return R.fail(e.getCode(), e.getMessage());

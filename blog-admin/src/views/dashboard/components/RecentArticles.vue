@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Clock, View, ChatDotRound } from '@element-plus/icons-vue'
+import { Clock, View } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { formatRelativeDate } from '@/utils/date'
 import type { Article } from '@/api/types'
@@ -20,35 +20,31 @@ function handleArticleClick(articleId: string) {
   <div class="list-content">
     <div
       v-for="(article, index) in articles"
-      :key="article.id"
+      :key="article.articleCode"
       class="list-item"
       :style="{ animationDelay: `${index * 0.05}s` }"
-      @click="handleArticleClick(article.id)"
+      @click="handleArticleClick(article.articleCode)"
     >
       <div class="item-main">
         <h4 class="item-title">{{ article.title }}</h4>
         <div class="item-meta">
           <span class="meta-item">
             <el-icon :size="14"><Clock /></el-icon>
-            <span>{{ formatRelativeDate(article.date) }}</span>
+            <span>{{ formatRelativeDate(article.gmtCreate) }}</span>
           </span>
           <span class="meta-item">
             <el-icon :size="14"><View /></el-icon>
-            <span>{{ article.views }}</span>
-          </span>
-          <span class="meta-item">
-            <el-icon :size="14"><ChatDotRound /></el-icon>
-            <span>{{ article.comments }}</span>
+            <span>{{ article.viewCount }}</span>
           </span>
         </div>
       </div>
       <el-tag
-        :type="article.status === 'published' ? 'success' : 'info'"
+        :type="article.publishStatus === 'PUBLISHED' ? 'success' : 'info'"
         size="small"
         effect="light"
         class="status-tag"
       >
-        {{ article.status === 'published' ? '已发布' : '草稿' }}
+        {{ article.publishStatus === 'PUBLISHED' ? '已发布' : '草稿' }}
       </el-tag>
     </div>
     <el-empty v-if="articles.length === 0" description="暂无文章" />

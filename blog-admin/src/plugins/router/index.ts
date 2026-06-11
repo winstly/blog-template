@@ -35,7 +35,7 @@ const router = createRouter({
           meta: { title: '写文章', hidden: true },
         },
         {
-          path: 'articles/edit/:id',
+          path: 'articles/edit/:code',
           name: 'article-edit',
           component: () => import('@/views/article/ArticleEdit.vue'),
           meta: { title: '编辑文章', hidden: true },

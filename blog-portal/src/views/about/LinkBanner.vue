@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
+
+const { profile, fetchProfile } = useSiteData();
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -18,7 +25,7 @@ import { mockProfile } from '@/api/mock'
     </header>
     <div class="banner-title">
       <h1>关于我</h1>
-      <p>{{ mockProfile.signature }}</p>
+      <p>{{ profile?.signature ?? '' }}</p>
     </div>
   </div>
 </template>

@@ -41,4 +41,10 @@ public class InteractionController {
                 targetType, targetCode, actionType, page, pageSize);
         return R.ok(result);
     }
+
+    @DeleteMapping("/{id}")
+    public R<Void> delete(@PathVariable Long id) {
+        interactionApplicationService.deleteInteraction(id);
+        return R.ok();
+    }
 }

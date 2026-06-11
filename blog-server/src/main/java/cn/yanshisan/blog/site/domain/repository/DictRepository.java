@@ -21,4 +21,6 @@ public interface DictRepository {
     void logicalDelete(DictTriple triple);
 
     boolean existsByTriple(DictTriple triple);
+
+    Optional<SysDict> findByBizCodeAndItemCode(String bizCode, String itemCode);
 }

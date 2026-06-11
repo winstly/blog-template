@@ -2,10 +2,12 @@ package cn.yanshisan.blog.site.domain.entity;
 
 import cn.yanshisan.blog.shared.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @TableName("sys_dict")
 public class SysDict extends BaseEntity {

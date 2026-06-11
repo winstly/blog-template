@@ -16,7 +16,10 @@ public enum ErrorCode {
     TAG_CODE_DUPLICATE(2011, "标签编码重复"),
     TAG_NOT_MOVABLE(2012, "标签不可移动到目标位置"),
     INTERACTION_TARGET_NOT_FOUND(2020, "交互目标不存在"),
-    DICT_TRIPLE_DUPLICATE(2030, "字典三元组重复"),
+    INTERACTION_NOT_FOUND(2021, "交互不存在"),
+    DICT_NOT_FOUND(2030, "字典不存在"),
+    DICT_TRIPLE_DUPLICATE(2031, "字典三元组重复"),
+    DIARY_NOT_FOUND(2040, "日记不存在"),
 
     SYSTEM_ERROR(3000, "系统错误");
 

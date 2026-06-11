@@ -19,11 +19,11 @@
         <!-- 编辑态：显示保存按钮 -->
         <template v-else>
           <el-button v-if="isEdit" @click="cancelEdit">取消</el-button>
-          <el-button @click="handleSave('draft')">
+          <el-button @click="handleSave('DRAFT')">
             <el-icon><Document /></el-icon>
             保存草稿
           </el-button>
-          <el-button type="primary" @click="handleSave('published')">
+          <el-button type="primary" @click="handleSave('PUBLISHED')">
             <el-icon><Promotion /></el-icon>
             {{ isEdit ? '更新发布' : '立即发布' }}
           </el-button>
@@ -114,7 +114,6 @@ import { ArrowLeft, Edit, View, Grid, Document, Promotion } from '@element-plus/
 import { articleService } from '@/api/services/article'
 import { categoryService } from '@/api/services/category'
 import { tagService } from '@/api/services/tag'
-import { buildTree } from '@/utils/tree'
 import ArticleEditForm from './components/ArticleEditForm.vue'
 import ArticlePreview from './components/ArticlePreview.vue'
 import type { Category, Tag } from '@/api/types'
@@ -122,8 +121,8 @@ import type { Category, Tag } from '@/api/types'
 const route = useRoute()
 const router = useRouter()
 
-const isEdit = computed(() => !!route.params.id)
-const articleId = computed(() => route.params.id as string)
+const isEdit = computed(() => !!route.params.code)
+const articleCode = computed(() => route.params.code as string)
 
 // 编辑模式：新建文章默认可编辑，编辑文章默认查看态
 const isEditing = ref(!isEdit.value)
@@ -146,14 +145,14 @@ const form = ref({
   content: '',
   category: '',
   tags: [] as string[],
-  cover: '',
-  status: 'draft' as 'draft' | 'published',
-  date: new Date().toISOString(),
+  coverUrl: '',
+  publishStatus: 'DRAFT' as 'DRAFT' | 'PUBLISHED',
+  gmtCreate: new Date().toISOString(),
 })
 
 async function loadCategories() {
   categories.value = await categoryService.getAll()
-  categoryTree.value = buildTree(categories.value)
+  categoryTree.value = categories.value
 }
 
 async function loadTags() {
@@ -162,17 +161,17 @@ async function loadTags() {
 
 async function loadArticle() {
   if (!isEdit.value) return
-  const article = await articleService.getById(articleId.value)
+  const article = await articleService.getByCode(articleCode.value)
   if (article) {
     form.value = {
       title: article.title,
-      summary: article.summary,
-      content: article.content,
-      category: article.category,
-      tags: [...article.tags],
-      cover: article.cover || '',
-      status: article.status,
-      date: article.date,
+      summary: article.summary || '',
+      content: article.body || '',
+      category: article.category?.tagCode || '',
+      tags: article.tags.map(t => t.tagName),
+      coverUrl: article.coverUrl || '',
+      publishStatus: article.publishStatus,
+      gmtCreate: article.gmtCreate,
     }
     // 保存原始数据用于取消编辑时恢复
     originalForm.value = JSON.stringify(form.value)
@@ -207,7 +206,7 @@ async function cancelEdit() {
   activeTab.value = 'preview'
 }
 
-async function handleSave(status: 'draft' | 'published') {
+async function handleSave(status: 'DRAFT' | 'PUBLISHED') {
   // Validation
   if (!form.value.title.trim()) {
     ElMessage.error('请输入文章标题')
@@ -223,25 +222,37 @@ async function handleSave(status: 'draft' | 'published') {
   }
 
   try {
-    const now = new Date().toISOString()
-    const data = {
-      ...form.value,
-      status,
-      date: isEdit.value ? form.value.date : now,
-      views: 0,
-      comments: 0,
-      isTop: false,
-    }
-
     if (isEdit.value) {
-      await articleService.update(articleId.value, data)
+      // Update article metadata
+      await articleService.update(articleCode.value, {
+        title: form.value.title,
+        summary: form.value.summary,
+        coverUrl: form.value.coverUrl,
+      })
+      // Update article content
+      await articleService.updateContent(articleCode.value, form.value.content)
+      // Update tags/category assignment
+      const tagCodes = form.value.tags
+      const categoryCodes = form.value.category ? [form.value.category] : []
+      await articleService.assignTags(articleCode.value, tagCodes, categoryCodes)
+      // Publish/unpublish if status changed
+      if (status === 'PUBLISHED') {
+        await articleService.publish(articleCode.value)
+      } else {
+        await articleService.unpublish(articleCode.value)
+      }
       ElMessage.success('文章更新成功')
       // 更新原始数据，退出编辑态
       originalForm.value = JSON.stringify(form.value)
       isEditing.value = false
       activeTab.value = 'preview'
     } else {
-      await articleService.create(data)
+      await articleService.create({
+        title: form.value.title,
+        summary: form.value.summary,
+        coverUrl: form.value.coverUrl,
+        body: form.value.content,
+      })
       ElMessage.success('文章发布成功')
       router.push('/articles')
     }

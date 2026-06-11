@@ -2,12 +2,8 @@ package cn.yanshisan.blog.site.interfaces.api;
 
 import cn.yanshisan.blog.shared.api.R;
 import cn.yanshisan.blog.site.application.SiteApplicationService;
-import cn.yanshisan.blog.site.domain.entity.SysDict;
-import cn.yanshisan.blog.site.interfaces.dto.FriendLinkVO;
-import cn.yanshisan.blog.site.interfaces.dto.NavItemVO;
-import cn.yanshisan.blog.site.interfaces.dto.ProfileVO;
-import cn.yanshisan.blog.site.interfaces.dto.SiteConfigVO;
-import cn.yanshisan.blog.site.interfaces.dto.SocialLinkVO;
+import cn.yanshisan.blog.site.interfaces.dto.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,13 +42,13 @@ public class SiteController {
     }
 
     @PostMapping("/dicts")
-    public R<SysDict> createDict(@RequestBody SysDict dict) {
-        return R.ok(siteApplicationService.createDict(dict));
+    public R<DictResponse> createDict(@RequestBody @Valid DictCreateRequest request) {
+        return R.ok(siteApplicationService.createDict(request));
     }
 
     @PutMapping("/dicts")
-    public R<SysDict> updateDict(@RequestBody SysDict dict) {
-        return R.ok(siteApplicationService.updateDict(dict));
+    public R<DictResponse> updateDict(@RequestBody @Valid DictUpdateRequest request) {
+        return R.ok(siteApplicationService.updateDict(request));
     }
 
     @DeleteMapping("/dicts")
@@ -60,6 +56,23 @@ public class SiteController {
                               @RequestParam String subCode,
                               @RequestParam String itemCode) {
         siteApplicationService.deleteDict(bizCode, subCode, itemCode);
+        return R.ok();
+    }
+
+    @PostMapping("/friend-links")
+    public R<FriendLinkVO> createFriendLink(@RequestBody @Valid FriendLinkCreateDTO dto) {
+        return R.ok(siteApplicationService.createFriendLink(dto));
+    }
+
+    @PutMapping("/friend-links/{itemCode}")
+    public R<FriendLinkVO> updateFriendLink(@PathVariable String itemCode,
+                                            @RequestBody FriendLinkUpdateDTO dto) {
+        return R.ok(siteApplicationService.updateFriendLink(itemCode, dto));
+    }
+
+    @DeleteMapping("/friend-links/{itemCode}")
+    public R<Void> deleteFriendLink(@PathVariable String itemCode) {
+        siteApplicationService.deleteFriendLink(itemCode);
         return R.ok();
     }
 }

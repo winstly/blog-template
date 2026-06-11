@@ -41,4 +41,19 @@ public class ArticlePublicationService {
 
         eventPublisher.publishEvent(new ArticlePublishedEvent(this, articleCode, article.getTitle()));
     }
+
+    @Transactional
+    public void unpublish(String articleCode) {
+        Article article = articleRepository.findByCode(articleCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ARTICLE_NOT_FOUND, articleCode));
+        Content content = articleRepository.findContentByArticleCode(articleCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ARTICLE_NOT_FOUND, articleCode));
+
+        article.unpublish();
+        content.unpublish();
+
+        ContentRevision revision = content.createRevision("Unpublished");
+        articleRepository.update(article, content);
+        articleRepository.saveRevision(revision);
+    }
 }

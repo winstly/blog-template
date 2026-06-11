@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import LinkList from './LinkList.vue'
-import { mockFriendLinks, mockProfile, siteInfo, linkRequirements } from '@/api/mock'
+import { ref, onMounted } from 'vue';
+import LinkList from './LinkList.vue';
+import { siteService } from '@/api/services';
+import { useSiteData } from '@/composables';
+import type { FriendLink } from '@/api/types';
+
+const { profile, fetchProfile } = useSiteData();
+
+const friendLinks = ref<FriendLink[]>([]);
 
 const skills = [
   { name: 'Vue3', level: 90 },
@@ -9,14 +16,30 @@ const skills = [
   { name: 'Node.js', level: 70 },
   { name: 'Python', level: 60 },
   { name: 'C#', level: 65 },
-]
+];
 
-const socialLinks = [
-  { icon: 'fa-github', url: 'https://github.com', color: '#333' },
-  { icon: 'fa-qq', url: 'https://wpa.qq.com/msgrd?v=3&uin=' + mockProfile.qq, color: '#12B7F5' },
-  { icon: 'fa-envelope', url: 'mailto:' + mockProfile.email, color: '#EA4335' },
-  { icon: 'fa-weixin', url: '#', color: '#07C160' },
-]
+onMounted(async () => {
+  fetchProfile();
+  try {
+    friendLinks.value = await siteService.getFriendLinks();
+  } catch (e) {
+    console.error('Failed to fetch friend links:', e);
+  }
+});
+
+const socialLinks = ref<{ icon: string; url: string; color: string }[]>([]);
+
+onMounted(async () => {
+  await fetchProfile();
+  if (profile.value) {
+    socialLinks.value = [
+      { icon: 'fa-github', url: 'https://github.com', color: '#333' },
+      { icon: 'fa-qq', url: 'https://wpa.qq.com/msgrd?v=3&uin=' + profile.value.qq, color: '#12B7F5' },
+      { icon: 'fa-envelope', url: 'mailto:' + profile.value.email, color: '#EA4335' },
+      { icon: 'fa-weixin', url: '#', color: '#07C160' },
+    ];
+  }
+});
 </script>
 
 <template>
@@ -25,7 +48,7 @@ const socialLinks = [
     <div class="page-banner">
       <div class="banner-content">
         <h1>关于我</h1>
-        <p>{{ mockProfile.signature }}</p>
+        <p>{{ profile?.signature ?? '' }}</p>
       </div>
     </div>
 
@@ -35,14 +58,14 @@ const socialLinks = [
         <div class="profile-card">
           <div class="profile-header">
             <div class="avatar">
-              <img src="https://www.yanshisan.cn/logo.png" alt="avatar" />
+              <img :src="profile?.avatar ?? 'https://www.yanshisan.cn/logo.png'" alt="avatar" />
             </div>
             <div class="profile-info">
-              <h2>{{ mockProfile.nickname }}</h2>
-              <p class="bio">{{ mockProfile.bio }}</p>
+              <h2>{{ profile?.nickname ?? '' }}</h2>
+              <p class="bio">{{ profile?.bio ?? '' }}</p>
               <div class="location">
                 <i class="fa fa-map-marker"></i>
-                {{ mockProfile.location }}
+                {{ profile?.location ?? '' }}
               </div>
             </div>
           </div>
@@ -98,17 +121,16 @@ const socialLinks = [
             <div class="site-info">
               <p>交换友链可在留言板留言，请将本站加入友链：</p>
               <ul>
-                <li><strong>名称：</strong>{{ siteInfo.name }}</li>
-                <li><strong>网址：</strong>{{ siteInfo.url }}</li>
-                <li><strong>图标：</strong>{{ siteInfo.logo }}</li>
-                <li><strong>描述：</strong>{{ siteInfo.description }}</li>
+                <li><strong>名称：</strong>{{ profile?.nickname ?? '' }}</li>
+                <li><strong>网址：</strong>https://www.yanshisan.cn</li>
+                <li><strong>描述：</strong>{{ profile?.signature ?? '' }}</li>
               </ul>
-              <p class="note">{{ linkRequirements.note }}</p>
+              <p class="note">申请提交后若无其它原因将在24小时内审核，如超过时间还未通过，请私信我。</p>
             </div>
           </div>
 
           <!-- 友链列表 -->
-          <LinkList :links="mockFriendLinks" />
+          <LinkList :links="friendLinks" />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import cn.yanshisan.blog.content.domain.vo.PublishStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class ArticleVO {
@@ -27,6 +28,9 @@ public class ArticleVO {
     private Integer version;
     private PublishStatus publishStatus;
 
+    private List<TagSummaryVO> tags;
+    private TagSummaryVO category;
+
     public static ArticleVO from(Article article, Content content) {
         ArticleVO vo = new ArticleVO();
         vo.setId(article.getId());
@@ -47,6 +51,13 @@ public class ArticleVO {
             vo.setVersion(content.getVersion());
             vo.setPublishStatus(content.getPublishStatus());
         }
+        return vo;
+    }
+
+    public static ArticleVO from(Article article, Content content, List<TagSummaryVO> tags, TagSummaryVO category) {
+        ArticleVO vo = from(article, content);
+        vo.setTags(tags);
+        vo.setCategory(category);
         return vo;
     }
 }

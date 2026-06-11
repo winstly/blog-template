@@ -27,7 +27,7 @@
               <el-tree-select
                 v-model="filters.category"
                 :data="categoryTree"
-                :props="{ label: 'name', value: 'id' }"
+                :props="{ label: 'tagName', value: 'tagCode' }"
                 placeholder="选择分类"
                 clearable
                 check-strictly
@@ -38,8 +38,8 @@
           <el-col :span="8">
             <el-form-item label="状态" class="w-full">
               <el-select v-model="filters.status" placeholder="全部" clearable class="w-full">
-                <el-option label="已发布" value="published" />
-                <el-option label="草稿" value="draft" />
+                <el-option label="已发布" value="PUBLISHED" />
+                <el-option label="草稿" value="DRAFT" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -62,8 +62,8 @@
         <el-table-column label="封面" width="100">
           <template #default="{ row }">
             <el-image
-              v-if="row.cover"
-              :src="row.cover"
+              v-if="row.coverUrl"
+              :src="row.coverUrl"
               class="w-16 h-10 rounded object-cover"
               preview-teleported
             />
@@ -84,34 +84,33 @@
         </el-table-column>
         <el-table-column label="分类" width="120">
           <template #default="{ row }">
-            <el-tag size="small">{{ row.category }}</el-tag>
+            <el-tag size="small">{{ row.category?.tagName || '-' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="标签" min-width="150">
           <template #default="{ row }">
             <el-tag
               v-for="tag in row.tags.slice(0, 3)"
-              :key="tag"
+              :key="tag.tagCode"
               size="small"
               class="mr-1"
             >
-              {{ tag }}
+              {{ tag.tagName }}
             </el-tag>
             <span v-if="row.tags.length > 3" class="text-gray-400 text-xs">+{{ row.tags.length - 3 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small">
-              {{ row.status === 'published' ? '已发布' : '草稿' }}
+            <el-tag :type="row.publishStatus === 'PUBLISHED' ? 'success' : 'info'" size="small">
+              {{ row.publishStatus === 'PUBLISHED' ? '已发布' : '草稿' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="浏览" prop="views" width="80" />
-        <el-table-column label="评论" prop="comments" width="80" />
+        <el-table-column label="浏览" prop="viewCount" width="80" />
         <el-table-column label="发布时间" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.date) }}
+            {{ formatDate(row.gmtCreate) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -160,7 +159,6 @@ import { articleService } from '@/api/services/article'
 import { categoryService } from '@/api/services/category'
 import SearchCard from '@/components/common/SearchCard.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import { buildTree } from '@/utils/tree'
 import { formatDate } from '@/utils/date'
 import type { Article, Category } from '@/api/types'
 
@@ -175,7 +173,7 @@ const selectedArticles = ref<Article[]>([])
 const filters = reactive({
   keyword: '',
   category: '',
-  status: '' as '' | 'draft' | 'published',
+  status: '' as '' | 'DRAFT' | 'PUBLISHED',
 })
 
 const pagination = reactive({
@@ -186,7 +184,7 @@ const pagination = reactive({
 
 async function loadCategories() {
   categories.value = await categoryService.getAll()
-  categoryTree.value = buildTree(categories.value)
+  categoryTree.value = categories.value
 }
 
 async function loadArticles() {
@@ -200,7 +198,7 @@ async function loadArticles() {
       status: filters.status || undefined,
     })
     articles.value = result.list
-    pagination.total = result.total
+    pagination.total = result.pagination.total
   } finally {
     loading.value = false
   }
@@ -224,12 +222,12 @@ function handleSelectionChange(selection: Article[]) {
 }
 
 function handleEdit(article: Article) {
-  router.push(`/articles/edit/${article.id}`)
+  router.push(`/articles/edit/${article.articleCode}`)
 }
 
 async function handleDelete(article: Article) {
   try {
-    await articleService.delete(article.id)
+    await articleService.delete(article.articleCode)
     ElMessage.success('删除成功')
     loadArticles()
   } catch {
@@ -244,7 +242,7 @@ async function handleBatchDelete() {
       '确认删除',
       { type: 'warning' }
     )
-    await articleService.batchDelete(selectedArticles.value.map(a => a.id))
+    await articleService.batchDelete(selectedArticles.value.map(a => a.articleCode))
     ElMessage.success('批量删除成功')
     loadArticles()
   } catch (error) {

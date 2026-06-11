@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
-import FooterProfile from './FooterProfile.vue'
-import FooterLinks from './FooterLinks.vue'
-import FooterContact from './FooterContact.vue'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
+import FooterProfile from './FooterProfile.vue';
+import FooterLinks from './FooterLinks.vue';
+import FooterContact from './FooterContact.vue';
 
-const currentYear = new Date().getFullYear()
+const { profile, fetchProfile } = useSiteData();
+const currentYear = new Date().getFullYear();
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -26,7 +32,7 @@ const currentYear = new Date().getFullYear()
         <div class="footer__row">
           <div class="footer__col footer__col--full">
             <p class="footer__copyright-text">
-              Copyright &copy; 2018-{{ currentYear }} {{ mockProfile.nickname }} All Rights Reserved V.3.1.3 蜀ICP备18008600号
+              Copyright &copy; 2018-{{ currentYear }} {{ profile?.nickname ?? '' }} All Rights Reserved V.3.1.3 蜀ICP备18008600号
             </p>
           </div>
         </div>

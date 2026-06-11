@@ -15,6 +15,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class InteractionService {
@@ -30,6 +32,10 @@ public class InteractionService {
         validateTarget(target);
         Interaction interaction = interactionFactory.create(target, action, userName, userAvatarUrl, remark, extMeta);
 
+        interactionRepository.save(interaction);
+        interaction.fillTreePath("/" + interaction.getId() + "/");
+        interactionRepository.update(interaction);
+
         eventPublisher.publishEvent(new InteractionCreatedEvent(this, interaction.getId(),
                 target.getTargetType(), target.getTargetCode(), action.getValue()));
         return interaction;
@@ -43,6 +49,10 @@ public class InteractionService {
 
         Interaction reply = interactionFactory.createReply(parent, action, userName, userAvatarUrl, remark, extMeta);
 
+        interactionRepository.save(reply);
+        reply.fillTreePath(parent.getTreePath() + reply.getId() + "/");
+        interactionRepository.update(reply);
+
         eventPublisher.publishEvent(new ReplyPostedEvent(this, reply.getId(), parentId,
                 parent.getTargetType(), parent.getTargetCode()));
         return reply;
@@ -54,5 +64,23 @@ public class InteractionService {
                 throw new BusinessException(ErrorCode.INTERACTION_TARGET_NOT_FOUND, target.getTargetCode());
             }
         }
+    }
+
+    public void approve(Long id) {
+        interactionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INTERACTION_TARGET_NOT_FOUND, "interaction not found"));
+        interactionRepository.updateDisplayStatus(id, 1);
+    }
+
+    public void deleteInteraction(Long id) {
+        interactionRepository.logicalDeleteById(id);
+    }
+
+    public void batchApprove(List<Long> ids) {
+        interactionRepository.batchUpdateDisplayStatus(ids, 1);
+    }
+
+    public void batchDelete(List<Long> ids) {
+        interactionRepository.batchLogicalDelete(ids);
     }
 }

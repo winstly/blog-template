@@ -10,9 +10,9 @@ defineProps<Props>()
 
 <template>
   <ul class="hot-articles">
-    <li v-for="(article, index) in articles" :key="article.id">
+    <li v-for="(article, index) in articles" :key="article.articleCode">
       <span :class="['rank', `rank-${index + 1}`]">{{ index + 1 }}</span>
-      <RouterLink :to="article.link" class="article-link">
+      <RouterLink :to="`/article/${article.articleCode}`" class="article-link">
         {{ article.title }}
       </RouterLink>
     </li>

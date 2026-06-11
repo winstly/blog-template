@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Link } from '@lucide/vue'
-import type { Article } from '@/api/types'
+import { Link } from '@lucide/vue';
+import type { Article } from '@/api/types';
 
 interface Props {
-  article: Article
-  delay?: number
+  article: Article;
+  delay?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   delay: 0,
-})
+});
 </script>
 
 <template>
@@ -22,10 +22,10 @@ const props = withDefaults(defineProps<Props>(), {
     <!-- Cover Image -->
     <div class="news-head relative overflow-hidden">
       <img
-        :src="article.cover"
+        :src="article.coverUrl ?? ''"
         :alt="article.title"
       />
-      <RouterLink :to="article.link" class="link-icon">
+      <RouterLink :to="`/article/${article.articleCode}`" class="link-icon">
         <Link class="w-5 h-5" />
       </RouterLink>
     </div>
@@ -33,17 +33,17 @@ const props = withDefaults(defineProps<Props>(), {
     <!-- Content -->
     <div class="news-content">
       <h4 class="mb-2">
-        <RouterLink :to="article.link" class="title-link">
+        <RouterLink :to="`/article/${article.articleCode}`" class="title-link">
           {{ article.title }}
         </RouterLink>
       </h4>
       <div class="date">
-        {{ article.date }}
+        {{ article.publishedAt ?? article.gmtCreate }}
       </div>
       <p class="summary">
         {{ article.summary }}
       </p>
-      <RouterLink :to="article.link" class="read-more">
+      <RouterLink :to="`/article/${article.articleCode}`" class="read-more">
         阅读更多
       </RouterLink>
     </div>

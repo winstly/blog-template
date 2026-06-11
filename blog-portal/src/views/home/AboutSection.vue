@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { mockProfile } from '@/api/mock'
-import SectionContainer from '@/components/layout/SectionContainer.vue'
+import { onMounted } from 'vue';
+import { useSiteData } from '@/composables';
+import SectionContainer from '@/components/layout/SectionContainer.vue';
+
+const { profile, fetchProfile } = useSiteData();
+
+onMounted(() => {
+  fetchProfile();
+});
 </script>
 
 <template>
@@ -22,7 +29,7 @@ import SectionContainer from '@/components/layout/SectionContainer.vue'
           :initial="{ opacity: 0, x: 50 }"
           :visible="{ opacity: 1, x: 0, transition: { duration: 800, delay: 200 } }"
         >
-          {{ mockProfile.bio }}
+          {{ profile?.bio ?? '' }}
         </p>
       </div>
     </div>

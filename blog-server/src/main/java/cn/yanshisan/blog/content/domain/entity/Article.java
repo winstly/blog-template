@@ -2,12 +2,14 @@ package cn.yanshisan.blog.content.domain.entity;
 
 import cn.yanshisan.blog.shared.entity.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(callSuper = true)
 @TableName("blog_article")
 public class Article extends BaseEntity {
@@ -36,11 +38,15 @@ public class Article extends BaseEntity {
         this.publishedAt = LocalDateTime.now();
     }
 
+    public void unpublish() {
+        this.publishedAt = null;
+    }
+
     public void togglePin() {
         this.isPinned = this.isPinned == null || !this.isPinned;
     }
 
     public void incrementViewCount() {
-        this.viewCount = this.viewCount + 1;
+        this.viewCount = (this.viewCount == null ? 0 : this.viewCount) + 1;
     }
 }

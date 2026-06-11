@@ -1,32 +1,41 @@
-/** 文章状态 */
-export type ArticleStatus = 'draft' | 'published'
+/** 发布状态 */
+export type PublishStatus = 'DRAFT' | 'PUBLISHED'
+
+/** 标签摘要（用于 ArticleVO 中） */
+export interface TagSummary {
+  tagCode: string
+  tagName: string
+}
 
 /** 文章 */
 export interface Article {
-  id: string
+  id: number
+  articleCode: string
   title: string
-  summary: string
-  content: string
-  cover: string
-  date: string
-  author?: string
-  views: number
-  comments: number
-  isTop: boolean
-  status: ArticleStatus
-  category: string
-  tags: string[]
+  summary: string | null
+  coverUrl: string | null
+  isPinned: boolean
+  viewCount: number
+  publishedAt: string | null
+  gmtCreate: string
+  gmtModified: string
+  body: string | null
+  contentFormat: string | null
+  wordCount: number | null
+  version: number | null
+  publishStatus: PublishStatus
+  tags: TagSummary[]
+  category: TagSummary | null
 }
 
 /** 友链 */
 export interface FriendLink {
-  id: string
+  itemCode: string
   name: string
   url: string
-  logo?: string
-  description?: string
-  order: number
-  active: boolean
+  logo: string | null
+  description: string | null
+  sortOrder: number
 }
 
 /** 个人信息 */
@@ -42,53 +51,72 @@ export interface Profile {
 
 /** 社交链接 */
 export interface SocialLink {
-  icon: string
+  code: string
   label: string
   url: string
 }
 
-/** 日记条目 */
-export interface DiaryEntry {
-  id: string
-  date: string
-  content: string
-  year: number
-  images?: string[]
+/** 导航项 */
+export interface NavItem {
+  code: string
+  label: string
+  path: string
 }
 
-/** 留言状态 */
-export type MessageStatus = 'pending' | 'approved'
+/** 日记条目 */
+export interface DiaryEntry {
+  id: number
+  diaryCode: string
+  content: string
+  images: string | null
+  diaryDate: string
+  year: number
+  gmtCreate: string
+  gmtModified: string
+}
 
 /** 留言/评论 */
 export interface Message {
-  id: string
-  author: string
-  username: string
-  avatar: string
+  id: number
+  userName: string
+  userAvatarUrl: string | null
   content: string
-  location: string
+  location: string | null
   date: string
-  status: MessageStatus
-  replyTo?: string
-  reply?: string
-  replies?: Message[]
+  status: 'pending' | 'approved'
+  replyTo: string | null
+  replies: Message[]
 }
 
-/** 分类 */
+/** 分类（后端用 Tag + relation_type='category'） */
 export interface Category {
-  id: string
-  name: string
-  count: number
-  parentId?: string
+  id: number
+  tagCode: string
+  tagName: string
+  treePath: string | null
+  treeDepth: number
+  sortOrder: number
+  displayStatus: number
+  description: string | null
+  articleCount: number
   children?: Category[]
-  sort?: number
+  gmtCreate: string
+  gmtModified: string
 }
 
 /** 标签 */
 export interface Tag {
-  id: string
-  name: string
-  count: number
+  id: number
+  tagCode: string
+  tagName: string
+  treePath: string | null
+  treeDepth: number
+  sortOrder: number
+  displayStatus: number
+  description: string | null
+  articleCount: number
+  gmtCreate: string
+  gmtModified: string
 }
 
 /** 用户状态 */
@@ -111,11 +139,10 @@ export interface User {
   email?: string
   avatar?: string
   role: 'admin' | 'editor'
-  /** 用户权限码列表 */
   permissions?: string[]
 }
 
-/** 系统用户（用户管理模块使用） */
+/** 系统用户 */
 export interface SystemUser {
   id: string
   username: string
@@ -127,7 +154,7 @@ export interface SystemUser {
   createTime: string
 }
 
-/** 角色选项（用于下拉选择） */
+/** 角色选项 */
 export interface RoleOption {
   id: string
   name: string
@@ -208,10 +235,12 @@ export interface PaginationParams {
   pageSize: number
 }
 
-/** 分页响应 */
+/** 分页响应（匹配后端 PageResult） */
 export interface PaginationResult<T> {
   list: T[]
-  total: number
-  page: number
-  pageSize: number
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+  }
 }

@@ -13,7 +13,7 @@ defineProps<Props>()
   <div class="article-list">
     <ArticleCard
       v-for="article in articles"
-      :key="article.id"
+      :key="article.articleCode"
       :article="article"
     />
   </div>

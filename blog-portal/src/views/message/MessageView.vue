@@ -1,8 +1,24 @@
 <script setup lang="ts">
-import PageBanner from '@/components/shared/PageBanner.vue'
-import MessageForm from './MessageForm.vue'
-import MessageList from './MessageList.vue'
-import { mockMessages } from '@/api/mock'
+import { ref, onMounted } from 'vue';
+import PageBanner from '@/components/shared/PageBanner.vue';
+import MessageForm from './MessageForm.vue';
+import MessageList from './MessageList.vue';
+import { messageService } from '@/api/services';
+import type { Message } from '@/api/types';
+
+const messages = ref<Message[]>([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    const result = await messageService.getList({ page: 1, pageSize: 50 });
+    messages.value = result.list;
+  } catch (e) {
+    console.error('Failed to fetch messages:', e);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -16,7 +32,12 @@ import { mockMessages } from '@/api/mock'
       <div class="container-fixed">
         <div class="container-inner">
           <MessageForm />
-          <MessageList :messages="mockMessages" />
+          <div v-if="!loading">
+            <MessageList :messages="messages" />
+          </div>
+          <div v-else class="text-center py-8">
+            <i class="fa fa-spinner fa-spin"></i> 加载中...
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,40 @@
 <script setup lang="ts">
-import PageBanner from '@/components/shared/PageBanner.vue'
-import ArticleList from './ArticleList.vue'
-import BlogSidebar from './BlogSidebar.vue'
-import { mockArticles, mockCategories, mockTags, mockHotArticles } from '@/api/mock'
+import { ref, onMounted, computed } from 'vue';
+import PageBanner from '@/components/shared/PageBanner.vue';
+import ArticleList from './ArticleList.vue';
+import BlogSidebar from './BlogSidebar.vue';
+import { articleService } from '@/api/services';
+import { categoryService } from '@/api/services';
+import { tagService } from '@/api/services';
+import type { Article, Category, Tag } from '@/api/types';
+
+const articles = ref<Article[]>([]);
+const categories = ref<Category[]>([]);
+const tags = ref<Tag[]>([]);
+const loading = ref(true);
+
+const hotArticles = computed(() => {
+  return [...articles.value]
+    .sort((a, b) => b.viewCount - a.viewCount)
+    .slice(0, 5);
+});
+
+onMounted(async () => {
+  try {
+    const [articlesResult, categoriesResult, tagsResult] = await Promise.all([
+      articleService.getList({ page: 1, pageSize: 20 }),
+      categoryService.getList(),
+      tagService.getList(),
+    ]);
+    articles.value = articlesResult.list;
+    categories.value = categoriesResult;
+    tags.value = tagsResult;
+  } catch (e) {
+    console.error('Failed to fetch blog data:', e);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -14,15 +46,18 @@ import { mockArticles, mockCategories, mockTags, mockHotArticles } from '@/api/m
     />
     <div class="doc-container">
       <div class="container-fixed">
-        <div class="blog-layout">
+        <div v-if="!loading" class="blog-layout">
           <main class="col-content">
-            <ArticleList :articles="mockArticles" />
+            <ArticleList :articles="articles" />
           </main>
           <BlogSidebar
-            :categories="mockCategories"
-            :tags="mockTags"
-            :hot-articles="mockHotArticles"
+            :categories="categories"
+            :tags="tags"
+            :hot-articles="hotArticles"
           />
+        </div>
+        <div v-else class="text-center py-12">
+          <i class="fa fa-spinner fa-spin"></i> 加载中...
         </div>
       </div>
     </div>
