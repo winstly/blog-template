@@ -8,9 +8,9 @@
 /* Custom theme configuration */
 @theme {
   /* Primary Colors */
-  --color-primary: #6bc30d;
-  --color-primary-light: #8ed94a;
-  --color-primary-dark: #5aa30b;
+  --color-primary: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-primary-dark: #2563eb;
 
   /* Background Colors */
   --color-background: #FAF9F9;
@@ -162,7 +162,6 @@
 @keyframes fadeInRight {
   0% { opacity: 0; transform: translate3d(100%, 0, 0); }
   100% { opacity: 1; transform: translate3d(0, 0, 0); }
-}
 
 /* Custom font */
 @font-face {
@@ -172,6 +171,7 @@
        url('@/assets/fonts/barbarahand-webfont.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 /* ============================================
@@ -258,4 +258,23 @@ body {
 
 .transition-base {
   transition: all var(--transition-base) ease;
+}
+
+/* ============================================
+   Reduced Motion Support
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .img-hover-zoom:hover img {
+    transform: none;
+  }
 }

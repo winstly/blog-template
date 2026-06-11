@@ -75,6 +75,7 @@
 
 .badge-primary {
   background: var(--color-surface-tertiary);
+<<<<<<< HEAD
   color: var(--color-text-light);
 }
 
@@ -166,6 +167,7 @@
   gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-md);
   background: var(--color-surface-tertiary);
+<<<<<<< HEAD
   color: var(--color-text-light);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-xs);
